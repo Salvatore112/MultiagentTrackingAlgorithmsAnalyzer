@@ -170,27 +170,71 @@
             background-color: #e7f1ff;
             border-color: #0d6efd;
         }
+        .language-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            background: white;
+            border-radius: 40px;
+            padding: 4px;
+            gap: 2px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .lang-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #666;
+        }
+        .lang-btn.active {
+            background: #0d6efd;
+            color: white;
+        }
+        .lang-btn:hover:not(.active) {
+            background: #e9ecef;
+            color: #0d6efd;
+        }
     </style>
 </head>
 <body>
+    <div class="language-switch">
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="en" class="lang-btn {% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+        </form>
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="ru" class="lang-btn {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">RU</button>
+        </form>
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="card-title mb-0">Multi-Agent Tracking Simulation Setup</h1>
+                    <h1 class="card-title mb-0">{% if LANGUAGE_CODE == 'ru' %}Настройка симуляции Multi-Agent Tracking{% else %}Multi-Agent Tracking Simulation Setup{% endif %}</h1>
                     <div>
                         {% if user.is_authenticated %}
                             <div class="user-info">
                                 <span class="user-badge">{{ user.username }}</span>
                                 <div class="action-buttons-group">
-                                    <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-outline-primary">Profile</a>
-                                    <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger">Logout</a>
+                                    <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-outline-primary">{% if LANGUAGE_CODE == 'ru' %}Профиль{% else %}Profile{% endif %}</a>
+                                    <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger">{% if LANGUAGE_CODE == 'ru' %}Выход{% else %}Logout{% endif %}</a>
                                 </div>
                             </div>
                         {% else %}
                             <div class="auth-buttons">
-                                <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-outline-primary">Sign in</a>
-                                <a href="{% url 'accounts:register' %}" class="btn btn-sm btn-outline-primary">Create account</a>
+                                <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-outline-primary">{% if LANGUAGE_CODE == 'ru' %}Вход{% else %}Sign in{% endif %}</a>
+                                <a href="{% url 'accounts:register' %}" class="btn btn-sm btn-outline-primary">{% if LANGUAGE_CODE == 'ru' %}Регистрация{% else %}Create account{% endif %}</a>
                             </div>
                         {% endif %}
                     </div>
@@ -203,7 +247,7 @@
                         <div class="col-md-5">
                             <div class="algorithms-section">
                                 <div class="base-algorithms-box">
-                                    <h5 class="mb-3">Base algorithms</h5>
+                                    <h5 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Базовые алгоритмы{% else %}Base algorithms{% endif %}</h5>
                                     <div class="algorithm-items">
                                         <div class="form-check">
                                             <input class="form-check-input algorithm-checkbox" type="checkbox" id="original_spsa" name="algorithms" value="original_spsa" checked>
@@ -222,7 +266,7 @@
                                 
                                 {% if custom_algorithms %}
                                 <div class="user-algorithms-box">
-                                    <h5 class="mb-3">User algorithms</h5>
+                                    <h5 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Пользовательские алгоритмы{% else %}User algorithms{% endif %}</h5>
                                     <div class="algorithm-items">
                                         {% for algo in custom_algorithms %}
                                         <div class="form-check">
@@ -237,39 +281,39 @@
                             
                             {% if not user.is_authenticated %}
                             <div class="info-tip mt-3">
-                                To add an algorithm create an account. Custom algorithms will have access to the necessary API.
-                                <a href="{% url 'accounts:register' %}">Create account</a>
+                                {% if LANGUAGE_CODE == 'ru' %}Чтобы добавить алгоритм, создайте аккаунт.{% else %}To add an algorithm create an account.{% endif %}
+                                <a href="{% url 'accounts:register' %}">{% if LANGUAGE_CODE == 'ru' %}Создать аккаунт{% else %}Create account{% endif %}</a>
                             </div>
                             {% endif %}
 
                             <div class="noise-section mt-4">
-                                <h6 class="mb-3">Noise Configuration</h6>
+                                <h6 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Настройка шума{% else %}Noise Configuration{% endif %}</h6>
                                 <div class="form-check form-switch mb-3">
                                     <input class="form-check-input" type="checkbox" id="noise_enabled" name="noise_enabled">
-                                    <label class="form-check-label" for="noise_enabled">Enable Distance Noise</label>
+                                    <label class="form-check-label" for="noise_enabled">{% if LANGUAGE_CODE == 'ru' %}Включить шум расстояний{% else %}Enable Distance Noise{% endif %}</label>
                                 </div>
                                 
                                 <div id="noiseParams" style="display: none;">
                                     <div class="noise-type-selector">
-                                        <label class="form-label small">Noise Type</label>
+                                        <label class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Тип шума{% else %}Noise Type{% endif %}</label>
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="noise_type" id="noise_uniform" value="uniform" checked>
-                                            <label class="form-check-label" for="noise_uniform">Uniform Distribution</label>
+                                            <label class="form-check-label" for="noise_uniform">{% if LANGUAGE_CODE == 'ru' %}Равномерное распределение{% else %}Uniform Distribution{% endif %}</label>
                                         </div>
                                         <div class="form-check">
                                             <input class="form-check-input" type="radio" name="noise_type" id="noise_gaussian" value="gaussian">
-                                            <label class="form-check-label" for="noise_gaussian">Gaussian Distribution</label>
+                                            <label class="form-check-label" for="noise_gaussian">{% if LANGUAGE_CODE == 'ru' %}Гауссовское распределение{% else %}Gaussian Distribution{% endif %}</label>
                                         </div>
                                     </div>
                                     
                                     <div id="uniformParams">
                                         <div class="row g-3">
                                             <div class="col-6">
-                                                <label for="noise_low" class="form-label small">Lower Bound</label>
+                                                <label for="noise_low" class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Нижняя граница{% else %}Lower Bound{% endif %}</label>
                                                 <input type="number" class="form-control" id="noise_low" name="noise_low" value="-0.1" step="0.01">
                                             </div>
                                             <div class="col-6">
-                                                <label for="noise_high" class="form-label small">Upper Bound</label>
+                                                <label for="noise_high" class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Верхняя граница{% else %}Upper Bound{% endif %}</label>
                                                 <input type="number" class="form-control" id="noise_high" name="noise_high" value="0.1" step="0.01">
                                             </div>
                                         </div>
@@ -278,11 +322,11 @@
                                     <div id="gaussianParams" style="display: none;">
                                         <div class="row g-3">
                                             <div class="col-6">
-                                                <label for="noise_mean" class="form-label small">Mean (μ)</label>
+                                                <label for="noise_mean" class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Среднее (μ){% else %}Mean (μ){% endif %}</label>
                                                 <input type="number" class="form-control" id="noise_mean" name="noise_mean" value="0.0" step="0.01">
                                             </div>
                                             <div class="col-6">
-                                                <label for="noise_std" class="form-label small">Standard Deviation (σ)</label>
+                                                <label for="noise_std" class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Стандартное отклонение (σ){% else %}Standard Deviation (σ){% endif %}</label>
                                                 <input type="number" class="form-control" id="noise_std" name="noise_std" value="0.1" step="0.01">
                                             </div>
                                         </div>
@@ -291,29 +335,28 @@
                             </div>
 
                             <div class="adjacency-matrix-section mt-4">
-                                <h6 class="mb-3">Sensor Connectivity</h6>
+                                <h6 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Связность сенсоров{% else %}Sensor Connectivity{% endif %}</h6>
                                 
                                 <div class="connectivity-option" id="sparsityOption">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="connectivity_mode" id="sparsity_mode" value="sparsity" checked>
-                                        <label class="form-check-label fw-bold" for="sparsity_mode">Generate random sensor topology</label>
+                                        <label class="form-check-label fw-bold" for="sparsity_mode">{% if LANGUAGE_CODE == 'ru' %}Сгенерировать случайную топологию сенсоров{% else %}Generate random sensor topology{% endif %}</label>
                                     </div>
                                     <div class="mt-2 ms-4">
-                                        <label for="adjacency_sparsity" class="form-label">Density percentage</label>
+                                        <label for="adjacency_sparsity" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Процент плотности{% else %}Density percentage{% endif %}</label>
                                         <input type="number" class="form-control" id="adjacency_sparsity" name="adjacency_sparsity" min="0" max="100" step="1" value="100" style="width: 150px;">
-                                        <div class="form-text">100% = fully connected, 0% = completely disconnected (sensors only communicate with themselves). Generated randomly.</div>
                                     </div>
                                 </div>
                                 
                                 <div class="connectivity-option mt-3" id="customMatrixOption">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="connectivity_mode" id="custom_mode" value="custom">
-                                        <label class="form-check-label fw-bold" for="custom_mode">Use custom adjacency matrix</label>
+                                        <label class="form-check-label fw-bold" for="custom_mode">{% if LANGUAGE_CODE == 'ru' %}Использовать свою матрицу смежности{% else %}Use custom adjacency matrix{% endif %}</label>
                                     </div>
                                     <div class="mt-2 ms-4" id="customMatrixDiv" style="display: none;">
-                                        <label class="form-label">Adjacency Matrix (comma-separated rows)</label>
+                                        <label class="form-label">{% if LANGUAGE_CODE == 'ru' %}Матрица смежности (строки через запятую){% else %}Adjacency Matrix (comma-separated rows){% endif %}</label>
                                         <textarea name="adjacency_matrix" id="adjacency_matrix" class="form-control matrix-input" rows="4" placeholder="Example for 3 sensors:&#10;0,1,1&#10;1,0,1&#10;1,1,0" style="font-family: monospace;"></textarea>
-                                        <div class="form-text">1 = connected, 0 = not connected. Diagonal should be 0 (no self-connection).</div>
+                                        <div class="form-text">1 = {% if LANGUAGE_CODE == 'ru' %}связаны{% else %}connected{% endif %}, 0 = {% if LANGUAGE_CODE == 'ru' %}не связаны{% else %}not connected{% endif %}</div>
                                     </div>
                                 </div>
                             </div>
@@ -324,41 +367,41 @@
                         </div>
                         
                         <div class="col-md-6">
-                            <h5 class="mb-3">Simulation Configuration</h5>
+                            <h5 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Конфигурация симуляции{% else %}Simulation Configuration{% endif %}</h5>
                             <div class="mb-3">
-                                <label for="duration" class="form-label">Simulation Duration (seconds)</label>
+                                <label for="duration" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Длительность симуляции (секунды){% else %}Simulation Duration (seconds){% endif %}</label>
                                 <input type="number" class="form-control" id="duration" name="duration" value="50" min="1" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="num_sensors" class="form-label">Number of Sensors</label>
+                                <label for="num_sensors" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Количество сенсоров{% else %}Number of Sensors{% endif %}</label>
                                 <input type="number" class="form-control" id="num_sensors" name="num_sensors" value="3" min="1" required>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label mb-2">Target Configuration</label>
+                                <label class="form-label mb-2">{% if LANGUAGE_CODE == 'ru' %}Конфигурация целей{% else %}Target Configuration{% endif %}</label>
                                 <div class="row g-3 align-items-end">
                                     <div class="col-6">
-                                        <label for="num_linear_targets" class="form-label small">Linear Targets</label>
+                                        <label for="num_linear_targets" class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Линейные цели{% else %}Linear Targets{% endif %}</label>
                                         <input type="number" class="form-control" id="num_linear_targets" name="num_linear_targets" value="2" min="0" required>
                                     </div>
                                     <div class="col-6">
-                                        <label for="num_random_targets" class="form-label small">Random Walk Targets</label>
+                                        <label for="num_random_targets" class="form-label small">{% if LANGUAGE_CODE == 'ru' %}Цели со случайным блужданием{% else %}Random Walk Targets{% endif %}</label>
                                         <input type="number" class="form-control" id="num_random_targets" name="num_random_targets" value="2" min="0" required>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="num_runs" class="form-label">Number of Simulation Runs</label>
+                                <label for="num_runs" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Количество прогонов симуляции{% else %}Number of Simulation Runs{% endif %}</label>
                                 <input type="number" class="form-control" id="num_runs" name="num_runs" value="1" min="1" required>
-                                <div class="form-text">The simulation will run multiple times with different random seeds.</div>
+                                <div class="form-text">{% if LANGUAGE_CODE == 'ru' %}Симуляция будет запущена несколько раз с разными случайными seed-ами.{% else %}The simulation will run multiple times with different random seeds.{% endif %}</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">Run Simulation</button>
+                        <button type="submit" class="btn btn-primary btn-lg">{% if LANGUAGE_CODE == 'ru' %}Запустить симуляцию{% else %}Run Simulation{% endif %}</button>
                     </div>
                 </form>
             </div>

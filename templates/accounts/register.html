@@ -16,13 +16,43 @@
             max-width: 500px;
             margin: 0 auto;
         }
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .language-btn {
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .language-btn.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .language-btn:not(.active):hover {
+            background-color: #e9ecef;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="card">
+        <div class="card position-relative">
+            <div class="language-selector">
+                <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.get_full_path }}">
+                    <button type="submit" name="language" value="en" class="language-btn {% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+                    <span class="text-muted">|</span>
+                    <button type="submit" name="language" value="ru" class="language-btn {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">RU</button>
+                </form>
+            </div>
             <div class="card-body p-4">
-                <h1 class="card-title text-center mb-4">Create Account</h1>
+                <h1 class="card-title text-center mb-4">{% if LANGUAGE_CODE == 'ru' %}Создать аккаунт{% else %}Create Account{% endif %}</h1>
                 
                 {% if messages %}
                     {% for message in messages %}
@@ -52,13 +82,13 @@
                     {% endfor %}
                     
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">Register</button>
+                        <button type="submit" class="btn btn-primary btn-lg">{% if LANGUAGE_CODE == 'ru' %}Зарегистрироваться{% else %}Register{% endif %}</button>
                     </div>
                 </form>
                 
                 <div class="text-center mt-3">
-                    <p>Already have an account? <a href="{% url 'accounts:login' %}">Login here</a></p>
-                    <p><a href="{% url 'simulations:setup' %}">Back to simulation setup</a></p>
+                    <p>{% if LANGUAGE_CODE == 'ru' %}Уже есть аккаунт?{% else %}Already have an account?{% endif %} <a href="{% url 'accounts:login' %}">{% if LANGUAGE_CODE == 'ru' %}Войти{% else %}Login here{% endif %}</a></p>
+                    <p><a href="{% url 'simulations:setup' %}">{% if LANGUAGE_CODE == 'ru' %}Вернуться к настройке симуляции{% else %}Back to simulation setup{% endif %}</a></p>
                 </div>
             </div>
         </div>

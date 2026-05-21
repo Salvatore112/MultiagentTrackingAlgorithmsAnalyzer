@@ -42,22 +42,66 @@
             margin: 2px;
             display: inline-block;
         }
+        .language-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            background: white;
+            border-radius: 40px;
+            padding: 4px;
+            gap: 2px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .lang-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #666;
+        }
+        .lang-btn.active {
+            background: #0d6efd;
+            color: white;
+        }
+        .lang-btn:hover:not(.active) {
+            background: #e9ecef;
+            color: #0d6efd;
+        }
     </style>
 </head>
 <body>
+    <div class="language-switch">
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="en" class="lang-btn {% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+        </form>
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="ru" class="lang-btn {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">RU</button>
+        </form>
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="card-title mb-0">Configuration Comparison Results</h1>
+                    <h1 class="card-title mb-0">{% if LANGUAGE_CODE == 'ru' %}Результаты сравнения конфигураций{% else %}Configuration Comparison Results{% endif %}</h1>
                     <div>
                         {% if user.is_authenticated %}
-                            <span class="badge bg-success me-2">Logged in as {{ user.username }}</span>
-                            <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-outline-primary">My Profile</a>
-                            <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger">Logout</a>
+                            <span class="badge bg-success me-2">{% if LANGUAGE_CODE == 'ru' %}Вы вошли как{% else %}Logged in as{% endif %} {{ user.username }}</span>
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-sm btn-outline-primary">{% if LANGUAGE_CODE == 'ru' %}Мой профиль{% else %}My Profile{% endif %}</a>
+                            <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger">{% if LANGUAGE_CODE == 'ru' %}Выход{% else %}Logout{% endif %}</a>
                         {% else %}
-                            <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-outline-primary">Login</a>
-                            <a href="{% url 'accounts:register' %}" class="btn btn-sm btn-outline-success">Register</a>
+                            <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-outline-primary">{% if LANGUAGE_CODE == 'ru' %}Вход{% else %}Login{% endif %}</a>
+                            <a href="{% url 'accounts:register' %}" class="btn btn-sm btn-outline-success">{% if LANGUAGE_CODE == 'ru' %}Регистрация{% else %}Register{% endif %}</a>
                         {% endif %}
                     </div>
                 </div>
@@ -69,21 +113,21 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <small>
-                                        <strong>Parameters:</strong> Duration: {{ config.params.duration }}s, 
-                                        Sensors: {{ config.params.num_sensors }}, 
-                                        Targets: {{ config.params.num_linear_targets|add:config.params.num_random_targets }}
-                                        ({{ config.params.num_linear_targets }} linear, {{ config.params.num_random_targets }} random)
+                                        <strong>{% if LANGUAGE_CODE == 'ru' %}Параметры:{% else %}Parameters:{% endif %}</strong> {% if LANGUAGE_CODE == 'ru' %}Длительность:{% else %}Duration:{% endif %} {{ config.params.duration }}s, 
+                                        {% if LANGUAGE_CODE == 'ru' %}Сенсоры:{% else %}Sensors:{% endif %} {{ config.params.num_sensors }}, 
+                                        {% if LANGUAGE_CODE == 'ru' %}Цели:{% else %}Targets:{% endif %} {{ config.params.num_linear_targets|add:config.params.num_random_targets }}
+                                        ({{ config.params.num_linear_targets }} {% if LANGUAGE_CODE == 'ru' %}линейных{% else %}linear{% endif %}, {{ config.params.num_random_targets }} {% if LANGUAGE_CODE == 'ru' %}со случайным блужданием{% else %}random{% endif %})
                                     </small>
                                 </div>
                                 <div class="col-md-6">
                                     <small>
-                                        <strong>Runs:</strong> {{ config.params.num_runs }},
-                                        <strong>Noise:</strong> {% if config.params.noise_enabled %}{{ config.params.noise_type }}{% else %}Disabled{% endif %}
+                                        <strong>{% if LANGUAGE_CODE == 'ru' %}Прогоны:{% else %}Runs:{% endif %}</strong> {{ config.params.num_runs }},
+                                        <strong>{% if LANGUAGE_CODE == 'ru' %}Шум:{% else %}Noise:{% endif %}</strong> {% if config.params.noise_enabled %}{% if config.params.noise_type == 'uniform' %}{% if LANGUAGE_CODE == 'ru' %}Равномерный{% else %}Uniform{% endif %}{% else %}{% if LANGUAGE_CODE == 'ru' %}Гауссовский{% else %}Gaussian{% endif %}{% endif %}{% else %}{% if LANGUAGE_CODE == 'ru' %}Отключён{% else %}Disabled{% endif %}{% endif %}
                                     </small>
                                 </div>
                             </div>
                             <div class="mt-2">
-                                <strong>Algorithms:</strong>
+                                <strong>{% if LANGUAGE_CODE == 'ru' %}Алгоритмы:{% else %}Algorithms:{% endif %}</strong>
                                 {% for algo in config.algorithms %}
                                     <span class="badge-algorithm">{{ algo }}</span>
                                 {% endfor %}
@@ -92,7 +136,7 @@
                         
                         {% if config.plots.comparison %}
                             <div class="plot-container">
-                                <h4>Convergence Comparison</h4>
+                                <h4>{% if LANGUAGE_CODE == 'ru' %}Сравнение сходимости{% else %}Convergence Comparison{% endif %}</h4>
                                 <img src="data:image/png;base64,{{ config.plots.comparison }}" alt="Comparison Plot for {{ config.name }}">
                             </div>
                         {% endif %}
@@ -101,14 +145,14 @@
                     {% endfor %}
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{% url 'simulations:setup' %}" class="btn btn-secondary">Run New Simulation</a>
-                        <a href="{% url 'accounts:profile' %}" class="btn btn-primary">Back to Profile</a>
+                        <a href="{% url 'simulations:setup' %}" class="btn btn-secondary">{% if LANGUAGE_CODE == 'ru' %}Запустить новую симуляцию{% else %}Run New Simulation{% endif %}</a>
+                        <a href="{% url 'accounts:profile' %}" class="btn btn-primary">{% if LANGUAGE_CODE == 'ru' %}Вернуться в профиль{% else %}Back to Profile{% endif %}</a>
                     </div>
                 {% else %}
                     <div class="alert alert-warning">
-                        No configuration results to display.
+                        {% if LANGUAGE_CODE == 'ru' %}Нет результатов для отображения.{% else %}No configuration results to display.{% endif %}
                     </div>
-                    <a href="{% url 'simulations:setup' %}" class="btn btn-primary">Back to Setup</a>
+                    <a href="{% url 'simulations:setup' %}" class="btn btn-primary">{% if LANGUAGE_CODE == 'ru' %}Вернуться к настройке{% else %}Back to Setup{% endif %}</a>
                 {% endif %}
             </div>
         </div>

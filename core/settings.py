@@ -34,18 +34,18 @@ if DEBUG:
     CSRF_TRUSTED_ORIGINS = [
         "http://localhost:8000",
         "http://127.0.0.1:8000",
-        "https://multiagenttrackingalgorithms.onrender.com",  # Add Render URL even in debug
+        "https://multiagenttrackingalgorithms.onrender.com",
     ]
 else:
     ALLOWED_HOSTS = [
         "multiagenttrackingalgorithms.onrender.com",
-        ".onrender.com",  # Allows all render subdomains
+        ".onrender.com",
         "localhost",
         "127.0.0.1",
     ]
     CSRF_TRUSTED_ORIGINS = [
         "https://multiagenttrackingalgorithms.onrender.com",
-        "https://*.onrender.com",  # Allow all Render subdomains
+        "https://*.onrender.com",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ]
@@ -66,6 +66,7 @@ INSTALLED_APPS: List[str] = [
 MIDDLEWARE: List[str] = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -85,6 +86,7 @@ TEMPLATES: List[Dict[str, Any]] = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.language_processor",
             ],
         },
     },
@@ -126,7 +128,16 @@ AUTH_PASSWORD_VALIDATORS: List[Dict[str, str]] = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE: str = "en-us"
+LANGUAGE_CODE: str = "en"
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('ru', 'Русский'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
 
 TIME_ZONE: str = "UTC"
 

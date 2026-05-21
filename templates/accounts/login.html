@@ -16,13 +16,57 @@
             max-width: 500px;
             margin: 0 auto;
         }
+        .language-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            background: white;
+            border-radius: 40px;
+            padding: 4px;
+            gap: 2px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .lang-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #666;
+        }
+        .lang-btn.active {
+            background: #0d6efd;
+            color: white;
+        }
+        .lang-btn:hover:not(.active) {
+            background: #e9ecef;
+            color: #0d6efd;
+        }
     </style>
 </head>
 <body>
+    <div class="language-switch">
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="en" class="lang-btn {% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+        </form>
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="ru" class="lang-btn {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">RU</button>
+        </form>
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="card-body p-4">
-                <h1 class="card-title text-center mb-4">Login</h1>
+                <h1 class="card-title text-center mb-4">{% if LANGUAGE_CODE == 'ru' %}Вход{% else %}Login{% endif %}</h1>
                 
                 {% if messages %}
                     {% for message in messages %}
@@ -49,13 +93,13 @@
                     {% endfor %}
                     
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">Login</button>
+                        <button type="submit" class="btn btn-primary btn-lg">{% if LANGUAGE_CODE == 'ru' %}Войти{% else %}Login{% endif %}</button>
                     </div>
                 </form>
                 
                 <div class="text-center mt-3">
-                    <p>Don't have an account? <a href="{% url 'accounts:register' %}">Register here</a></p>
-                    <p><a href="{% url 'simulations:setup' %}">Continue as guest</a></p>
+                    <p>{% if LANGUAGE_CODE == 'ru' %}Нет аккаунта?{% else %}Don't have an account?{% endif %} <a href="{% url 'accounts:register' %}">{% if LANGUAGE_CODE == 'ru' %}Зарегистрироваться{% else %}Register here{% endif %}</a></p>
+                    <p><a href="{% url 'simulations:setup' %}">{% if LANGUAGE_CODE == 'ru' %}Продолжить как гость{% else %}Continue as guest{% endif %}</a></p>
                 </div>
             </div>
         </div>

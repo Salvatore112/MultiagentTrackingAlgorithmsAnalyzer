@@ -25,17 +25,61 @@
             max-height: 300px;
             overflow-y: auto;
         }
+        .language-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            background: white;
+            border-radius: 40px;
+            padding: 4px;
+            gap: 2px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .lang-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #666;
+        }
+        .lang-btn.active {
+            background: #0d6efd;
+            color: white;
+        }
+        .lang-btn:hover:not(.active) {
+            background: #e9ecef;
+            color: #0d6efd;
+        }
     </style>
 </head>
 <body>
+    <div class="language-switch">
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="en" class="lang-btn {% if LANGUAGE_CODE == 'en' %}active{% endif %}">EN</button>
+        </form>
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="ru" class="lang-btn {% if LANGUAGE_CODE == 'ru' %}active{% endif %}">RU</button>
+        </form>
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="card-title mb-0">My Profile</h1>
+                    <h1 class="card-title mb-0">{% if LANGUAGE_CODE == 'ru' %}Мой профиль{% else %}My Profile{% endif %}</h1>
                     <div>
-                        <a href="{% url 'simulations:setup' %}" class="btn btn-outline-primary me-2">Back to Simulator</a>
-                        <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger">Logout</a>
+                        <a href="{% url 'simulations:setup' %}" class="btn btn-outline-primary me-2">{% if LANGUAGE_CODE == 'ru' %}Вернуться в симулятор{% else %}Back to Simulator{% endif %}</a>
+                        <a href="{% url 'accounts:logout' %}" class="btn btn-outline-danger">{% if LANGUAGE_CODE == 'ru' %}Выход{% else %}Logout{% endif %}</a>
                     </div>
                 </div>
                 
@@ -43,23 +87,23 @@
                     <div class="col-md-6">
                         <div class="card bg-light">
                             <div class="card-body">
-                                <h5 class="card-title">Account Information</h5>
-                                <p><strong>Username:</strong> {{ user.username }}</p>
+                                <h5 class="card-title">{% if LANGUAGE_CODE == 'ru' %}Информация об аккаунте{% else %}Account Information{% endif %}</h5>
+                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Имя пользователя:{% else %}Username:{% endif %}</strong> {{ user.username }}</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card bg-light">
                             <div class="card-body">
-                                <h5 class="card-title">Quick Actions</h5>
-                                <a href="{% url 'accounts:upload_algorithm' %}" class="btn btn-success w-100 mb-2">Upload New Algorithm</a>
-                                <a href="{% url 'accounts:save_config' %}" class="btn btn-info w-100">Save Current Configuration</a>
+                                <h5 class="card-title">{% if LANGUAGE_CODE == 'ru' %}Быстрые действия{% else %}Quick Actions{% endif %}</h5>
+                                <a href="{% url 'accounts:upload_algorithm' %}" class="btn btn-success w-100 mb-2">{% if LANGUAGE_CODE == 'ru' %}Загрузить новый алгоритм{% else %}Upload New Algorithm{% endif %}</a>
+                                <a href="{% url 'accounts:save_config' %}" class="btn btn-info w-100">{% if LANGUAGE_CODE == 'ru' %}Сохранить текущую конфигурацию{% else %}Save Current Configuration{% endif %}</a>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <h3 class="mb-3">My Algorithms</h3>
+                <h3 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Мои алгоритмы{% else %}My Algorithms{% endif %}</h3>
                 
                 {% if messages %}
                     {% for message in messages %}
@@ -78,15 +122,15 @@
                                     <div class="card-body">
                                         <h5 class="card-title">{{ algorithm.name }}</h5>
                                         <p class="card-text text-muted small">
-                                            Uploaded: {{ algorithm.created_at|date:"Y-m-d H:i" }}
+                                            {% if LANGUAGE_CODE == 'ru' %}Загружен:{% else %}Uploaded:{% endif %} {{ algorithm.created_at|date:"Y-m-d H:i" }}
                                         </p>
                                         {% if algorithm.description %}
                                             <p class="card-text">{{ algorithm.description|truncatechars:100 }}</p>
                                         {% endif %}
                                         <div class="btn-group w-100" role="group">
-                                            <a href="{% url 'accounts:rename_algorithm' algorithm.id %}" class="btn btn-sm btn-outline-primary">Rename</a>
+                                            <a href="{% url 'accounts:rename_algorithm' algorithm.id %}" class="btn btn-sm btn-outline-primary">{% if LANGUAGE_CODE == 'ru' %}Переименовать{% else %}Rename{% endif %}</a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ algorithm.id }}">
-                                                Delete
+                                                {% if LANGUAGE_CODE == 'ru' %}Удалить{% else %}Delete{% endif %}
                                             </button>
                                         </div>
                                     </div>
@@ -98,16 +142,16 @@
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Delete Algorithm</h5>
+                                            <h5 class="modal-title">{% if LANGUAGE_CODE == 'ru' %}Удалить алгоритм{% else %}Delete Algorithm{% endif %}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <p>Are you sure you want to delete "{{ algorithm.name }}"?</p>
-                                            <p class="text-danger">This action cannot be undone.</p>
+                                            <p>{% if LANGUAGE_CODE == 'ru' %}Вы уверены, что хотите удалить "{{ algorithm.name }}"?{% else %}Are you sure you want to delete "{{ algorithm.name }}"?{% endif %}</p>
+                                            <p class="text-danger">{% if LANGUAGE_CODE == 'ru' %}Это действие невозможно отменить.{% else %}This action cannot be undone.{% endif %}</p>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <a href="{% url 'accounts:delete_algorithm' algorithm.id %}" class="btn btn-danger">Delete</a>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% if LANGUAGE_CODE == 'ru' %}Отмена{% else %}Cancel{% endif %}</button>
+                                            <a href="{% url 'accounts:delete_algorithm' algorithm.id %}" class="btn btn-danger">{% if LANGUAGE_CODE == 'ru' %}Удалить{% else %}Delete{% endif %}</a>
                                         </div>
                                     </div>
                                 </div>
@@ -116,12 +160,12 @@
                     </div>
                 {% else %}
                     <div class="alert alert-info mb-4">
-                        You haven't uploaded any custom algorithms yet. 
-                        <a href="{% url 'accounts:upload_algorithm' %}" class="alert-link">Upload your first algorithm!</a>
+                        {% if LANGUAGE_CODE == 'ru' %}Вы ещё не загрузили ни одного пользовательского алгоритма.{% else %}You haven't uploaded any custom algorithms yet.{% endif %} 
+                        <a href="{% url 'accounts:upload_algorithm' %}" class="alert-link">{% if LANGUAGE_CODE == 'ru' %}Загрузите свой первый алгоритм!{% else %}Upload your first algorithm!{% endif %}</a>
                     </div>
                 {% endif %}
                 
-                <h3 class="mb-3">Saved Configurations</h3>
+                <h3 class="mb-3">{% if LANGUAGE_CODE == 'ru' %}Сохранённые конфигурации{% else %}Saved Configurations{% endif %}</h3>
                 
                 {% if configs %}
                     <form method="post" action="{% url 'accounts:run_multiple_configs' %}" id="multiConfigForm">
@@ -132,7 +176,7 @@
                                     <div class="card-body">
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" id="selectAll">
-                                            <label class="form-check-label" for="selectAll">Select All</label>
+                                            <label class="form-check-label" for="selectAll">{% if LANGUAGE_CODE == 'ru' %}Выбрать все{% else %}Select All{% endif %}</label>
                                         </div>
                                         <hr>
                                         <div class="config-select">
@@ -144,13 +188,13 @@
                                                         {% if config.description %}
                                                             <br><small class="text-muted">{{ config.description|truncatechars:50 }}</small>
                                                         {% endif %}
-                                                        <br><small class="text-muted">Created: {{ config.created_at|date:"Y-m-d H:i" }}</small>
+                                                        <br><small class="text-muted">{% if LANGUAGE_CODE == 'ru' %}Создана:{% else %}Created:{% endif %} {{ config.created_at|date:"Y-m-d H:i" }}</small>
                                                     </label>
                                                 </div>
                                             {% endfor %}
                                         </div>
                                         <div class="mt-3">
-                                            <button type="submit" class="btn btn-primary">Run Selected Configurations</button>
+                                            <button type="submit" class="btn btn-primary">{% if LANGUAGE_CODE == 'ru' %}Запустить выбранные конфигурации{% else %}Run Selected Configurations{% endif %}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -168,14 +212,14 @@
                                             <p class="card-text">{{ config.description|truncatechars:100 }}</p>
                                         {% endif %}
                                         <p class="card-text text-muted small">
-                                            Created: {{ config.created_at|date:"Y-m-d H:i" }}<br>
-                                            Sensors: {{ config.num_sensors }}, Targets: {{ config.num_linear_targets|add:config.num_random_targets }}<br>
-                                            Algorithms: {{ config.algorithms|join:", " }}
+                                            {% if LANGUAGE_CODE == 'ru' %}Создана:{% else %}Created:{% endif %} {{ config.created_at|date:"Y-m-d H:i" }}<br>
+                                            {% if LANGUAGE_CODE == 'ru' %}Сенсоры:{% else %}Sensors:{% endif %} {{ config.num_sensors }}, {% if LANGUAGE_CODE == 'ru' %}Цели:{% else %}Targets:{% endif %} {{ config.num_linear_targets|add:config.num_random_targets }}<br>
+                                            {% if LANGUAGE_CODE == 'ru' %}Алгоритмы:{% else %}Algorithms:{% endif %} {{ config.algorithms|join:", " }}
                                         </p>
                                         <div class="btn-group w-100" role="group">
-                                            <a href="{% url 'accounts:run_config' config.id %}" class="btn btn-sm btn-success">Run</a>
+                                            <a href="{% url 'accounts:run_config' config.id %}" class="btn btn-sm btn-success">{% if LANGUAGE_CODE == 'ru' %}Запустить{% else %}Run{% endif %}</a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteConfigModal{{ config.id }}">
-                                                Delete
+                                                {% if LANGUAGE_CODE == 'ru' %}Удалить{% else %}Delete{% endif %}
                                             </button>
                                         </div>
                                     </div>
@@ -187,16 +231,16 @@
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Delete Configuration</h5>
+                                            <h5 class="modal-title">{% if LANGUAGE_CODE == 'ru' %}Удалить конфигурацию{% else %}Delete Configuration{% endif %}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <p>Are you sure you want to delete "{{ config.name }}"?</p>
-                                            <p class="text-danger">This action cannot be undone.</p>
+                                            <p>{% if LANGUAGE_CODE == 'ru' %}Вы уверены, что хотите удалить "{{ config.name }}"?{% else %}Are you sure you want to delete "{{ config.name }}"?{% endif %}</p>
+                                            <p class="text-danger">{% if LANGUAGE_CODE == 'ru' %}Это действие невозможно отменить.{% else %}This action cannot be undone.{% endif %}</p>
                                         </div>
                                         <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <a href="{% url 'accounts:delete_config' config.id %}" class="btn btn-danger">Delete</a>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% if LANGUAGE_CODE == 'ru' %}Отмена{% else %}Cancel{% endif %}</button>
+                                            <a href="{% url 'accounts:delete_config' config.id %}" class="btn btn-danger">{% if LANGUAGE_CODE == 'ru' %}Удалить{% else %}Delete{% endif %}</a>
                                         </div>
                                     </div>
                                 </div>
@@ -205,8 +249,8 @@
                     </div>
                 {% else %}
                     <div class="alert alert-info">
-                        You haven't saved any simulation configurations yet. 
-                        <a href="{% url 'simulations:setup' %}" class="alert-link">Create and save a configuration!</a>
+                        {% if LANGUAGE_CODE == 'ru' %}У вас нет сохранённых конфигураций симуляции.{% else %}You haven't saved any simulation configurations yet.{% endif %} 
+                        <a href="{% url 'simulations:setup' %}" class="alert-link">{% if LANGUAGE_CODE == 'ru' %}Создайте и сохраните конфигурацию!{% else %}Create and save a configuration!{% endif %}</a>
                     </div>
                 {% endif %}
             </div>
