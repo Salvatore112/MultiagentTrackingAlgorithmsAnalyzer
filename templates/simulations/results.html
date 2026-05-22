@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Agent Tracking - Results</title>
+    <title>MTAA - Results</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -105,12 +105,12 @@
                             <div class="col-md-6">
                                 <p><strong>{% if LANGUAGE_CODE == 'ru' %}Длительность:{% else %}Duration:{% endif %}</strong> {{ simulation_params.duration }} {% if LANGUAGE_CODE == 'ru' %}секунд{% else %}seconds{% endif %}</p>
                                 <p><strong>{% if LANGUAGE_CODE == 'ru' %}Сенсоры:{% else %}Sensors:{% endif %}</strong> {{ simulation_params.num_sensors }}</p>
-                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Количество прогонов:{% else %}Number of Runs:{% endif %}</strong> {{ simulation_params.num_runs }}</p>
+                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Количество запусков:{% else %}Number of Runs:{% endif %}</strong> {{ simulation_params.num_runs }}</p>
                             </div>
                             <div class="col-md-6">
                                 <p><strong>{% if LANGUAGE_CODE == 'ru' %}Линейные цели:{% else %}Linear Targets:{% endif %}</strong> {{ simulation_params.num_linear_targets }}</p>
-                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Цели со случайным блужданием:{% else %}Random Walk Targets:{% endif %}</strong> {{ simulation_params.num_random_targets }}</p>
-                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Текущий прогон:{% else %}Current Run:{% endif %}</strong> {{ selected_run|add:1 }} {% if LANGUAGE_CODE == 'ru' %}из{% else %}of{% endif %} {{ num_runs }}</p>
+                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Случайные цели:{% else %}Random Targets:{% endif %}</strong> {{ simulation_params.num_random_targets }}</p>
+                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Текущий запуск:{% else %}Current Run:{% endif %}</strong> {{ selected_run|add:1 }} {% if LANGUAGE_CODE == 'ru' %}из{% else %}of{% endif %} {{ num_runs }}</p>
                             </div>
                         </div>
                         <p><strong>{% if LANGUAGE_CODE == 'ru' %}Алгоритмы:{% else %}Algorithms:{% endif %}</strong> {{ simulation_params.algorithms|join:", " }}</p>
@@ -119,26 +119,26 @@
 
                 {% if config_name %}
                     <div class="alert alert-info mb-4">
-                        {% if LANGUAGE_CODE == 'ru' %}Запуск сохранённой конфигурации:{% else %}Running saved configuration:{% endif %} <strong>{{ config_name }}</strong>
+                        {% if LANGUAGE_CODE == 'ru' %}Запуск сохранённого сценария:{% else %}Running saved scenario:{% endif %} <strong>{{ config_name }}</strong>
                     </div>
                 {% endif %}
 
                 {% if num_runs > 1 %}
                 <div class="run-selector card mb-4">
                     <div class="card-body">
-                        <h5 class="card-title">{% if LANGUAGE_CODE == 'ru' %}Выберите прогон симуляции{% else %}Select Simulation Run{% endif %}</h5>
+                        <h5 class="card-title">{% if LANGUAGE_CODE == 'ru' %}Выберите запуск симуляции{% else %}Select Simulation Run{% endif %}</h5>
                         <form method="get" class="row g-3 align-items-center">
                             <div class="col-md-8">
                                 <select class="form-select" id="runSelect" name="run" onchange="this.form.submit()">
                                     {% for run_num in run_range %}
                                     <option value="{{ run_num }}" {% if selected_run == run_num %}selected{% endif %}>
-                                        {% if LANGUAGE_CODE == 'ru' %}Прогон{% else %}Run{% endif %} {{ run_num|add:1 }}
+                                        {% if LANGUAGE_CODE == 'ru' %}Запуск{% else %}Run{% endif %} {{ run_num|add:1 }}
                                     </option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <button type="submit" class="btn btn-primary w-100">{% if LANGUAGE_CODE == 'ru' %}Показать прогон{% else %}View Run{% endif %}</button>
+                                <button type="submit" class="btn btn-primary w-100">{% if LANGUAGE_CODE == 'ru' %}Показать запуск{% else %}View Run{% endif %}</button>
                             </div>
                         </form>
                     </div>
@@ -161,7 +161,7 @@
 
                 <div class="tab-content" id="viewTabsContent">
                     <div class="tab-pane fade show active" id="all" role="tabpanel">
-                        <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Общий анализ{% else %}Overall Analysis{% endif %} {% if num_runs > 1 %}({% if LANGUAGE_CODE == 'ru' %}Прогон{% else %}Run{% endif %} {{ selected_run|add:1 }}){% endif %}</h2>
+                        <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Общий анализ{% else %}Overall Analysis{% endif %} {% if num_runs > 1 %}({% if LANGUAGE_CODE == 'ru' %}Запуск{% else %}Run{% endif %} {{ selected_run|add:1 }}){% endif %}</h2>
                         
                         {% if plots.trajectories %}
                         <div class="row mb-4">
@@ -180,13 +180,13 @@
                         </div>
                         {% else %}
                         <div class="alert alert-info">
-                            {% if LANGUAGE_CODE == 'ru' %}Нет доступных графиков для этого прогона.{% else %}No plots available for this run.{% endif %}
+                            {% if LANGUAGE_CODE == 'ru' %}Нет доступных графиков для этого запуска.{% else %}No plots available for this run.{% endif %}
                         </div>
                         {% endif %}
                     </div>
 
                     <div class="tab-pane fade" id="individual" role="tabpanel">
-                        <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Индивидуальный вид{% else %}Individual View{% endif %} {% if num_runs > 1 %}({% if LANGUAGE_CODE == 'ru' %}Прогон{% else %}Run{% endif %} {{ selected_run|add:1 }}){% endif %}</h2>
+                        <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Индивидуальный вид{% else %}Individual View{% endif %} {% if num_runs > 1 %}({% if LANGUAGE_CODE == 'ru' %}Запуск{% else %}Run{% endif %} {{ selected_run|add:1 }}){% endif %}</h2>
                         <div class="card mb-4">
                             <div class="card-body">
                                 <form method="get" class="row g-3 align-items-end">
@@ -244,14 +244,14 @@
 
                     {% if num_runs > 1 %}
                     <div class="tab-pane fade" id="aggregated" role="tabpanel">
-                        <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Агрегированный анализ (все {{ num_runs }} прогонов){% else %}Aggregated Analysis (All {{ num_runs }} Runs){% endif %}</h2>
+                        <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Агрегированный анализ (все {{ num_runs }} запусков){% else %}Aggregated Analysis (All {{ num_runs }} Runs){% endif %}</h2>
                         
                         {% if aggregated_plots.aggregated %}
                         <div class="row mb-4">
                             <div class="col-12">
                                 <div class="plot-container">
                                     <h3>{% if LANGUAGE_CODE == 'ru' %}Агрегированная ошибка (среднее ± стандартное отклонение){% else %}Aggregated Error (Mean ± Standard Deviation){% endif %}</h3>
-                                    <p class="text-muted">{% if LANGUAGE_CODE == 'ru' %}Заштрихованная область представляет ±1 стандартное отклонение по всем {{ num_runs }} прогонам{% else %}Shaded area represents ±1 standard deviation across all {{ num_runs }} runs{% endif %}</p>
+                                    <p class="text-muted">{% if LANGUAGE_CODE == 'ru' %}Заштрихованная область представляет ±1 стандартное отклонение по всем {{ num_runs }} запускам{% else %}Shaded area represents ±1 standard deviation across all {{ num_runs }} runs{% endif %}</p>
                                     <img src="data:image/png;base64,{{ aggregated_plots.aggregated }}" alt="Aggregated Error Plot">
                                 </div>
                             </div>

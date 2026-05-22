@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Save Configuration - Multi-Agent Tracking</title>
+    <title>MTAA - Save Configuration</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -69,7 +69,7 @@
     <div class="container">
         <div class="card">
             <div class="card-body p-4">
-                <h1 class="card-title text-center mb-4">{% if LANGUAGE_CODE == 'ru' %}Сохранить конфигурацию симуляции{% else %}Save Simulation Configuration{% endif %}</h1>
+                <h1 class="card-title text-center mb-4">{% if LANGUAGE_CODE == 'ru' %}Сохранить сценарий симуляции{% else %}Save Simulation Scenario{% endif %}</h1>
                 
                 {% if messages %}
                     {% for message in messages %}
@@ -84,7 +84,7 @@
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="id_name" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Название конфигурации{% else %}Configuration Name{% endif %} *</label>
+                        <label for="id_name" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Название сценария{% else %}Scenario Name{% endif %} *</label>
                         <input type="text" name="name" class="form-control" id="id_name" required>
                     </div>
                     
@@ -113,13 +113,13 @@
                             <input type="number" name="num_linear_targets" class="form-control" id="id_num_linear_targets" value="2" min="0">
                         </div>
                         <div class="col-md-6">
-                            <label for="id_num_random_targets" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Цели со случайным блужданием{% else %}Random Walk Targets{% endif %}</label>
+                            <label for="id_num_random_targets" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Случайные цели{% else %}Random Targets{% endif %}</label>
                             <input type="number" name="num_random_targets" class="form-control" id="id_num_random_targets" value="2" min="0">
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_num_runs" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Количество прогонов{% else %}Number of Runs{% endif %}</label>
+                        <label for="id_num_runs" class="form-label">{% if LANGUAGE_CODE == 'ru' %}Количество запусков{% else %}Number of Runs{% endif %}</label>
                         <input type="number" name="num_runs" class="form-control" id="id_num_runs" value="1" min="1">
                     </div>
                     
@@ -197,7 +197,7 @@
                     </div>
                     
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">{% if LANGUAGE_CODE == 'ru' %}Сохранить конфигурацию{% else %}Save Configuration{% endif %}</button>
+                        <button type="submit" class="btn btn-primary btn-lg">{% if LANGUAGE_CODE == 'ru' %}Сохранить сценарий{% else %}Save Scenario{% endif %}</button>
                         <a href="{% url 'accounts:profile' %}" class="btn btn-secondary">{% if LANGUAGE_CODE == 'ru' %}Отмена{% else %}Cancel{% endif %}</a>
                     </div>
                 </form>

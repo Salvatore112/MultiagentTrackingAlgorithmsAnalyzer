@@ -112,7 +112,7 @@ class Simulation:
         self, obj_id: int, area_size: float = 50
     ) -> Tuple[Tuple[float, float], Tuple[float, float]]:
         timestamp: float = time.time()
-        seed: str = hashlib.sha256(f"linear_{obj_id}_{timestamp}".encode()).hexdigest()
+        seed: str = hashlib.sha256(f"random_{obj_id}_{timestamp}".encode()).hexdigest()
         random_state: Any = random.getstate()
         random.seed(seed)
 
