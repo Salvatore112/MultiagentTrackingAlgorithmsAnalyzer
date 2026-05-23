@@ -273,10 +273,11 @@ def results_view(request: HttpRequest) -> HttpResponse:
             selected_run,
             num_runs,
             lline_config,
+            request,
         )
     else:
         aggregated_plots = generate_aggregated_plots(
-            all_simulations, all_results, all_initial_estimates, num_runs, lline_config
+            all_simulations, all_results, all_initial_estimates, num_runs, lline_config, request
         )
         if selected_run < num_runs:
             plots_data = generate_plots(
@@ -286,6 +287,7 @@ def results_view(request: HttpRequest) -> HttpResponse:
                 selected_run,
                 num_runs,
                 lline_config,
+                request,
             )
 
     config_name = request.session.get("single_config_name", None)
@@ -324,6 +326,7 @@ def results_view(request: HttpRequest) -> HttpResponse:
             target_int,
             selected_run,
             lline_config,
+            request,
         )
         context["individual_plots"] = individual_plots
         context["selected_sensor"] = sensor_int
@@ -429,7 +432,7 @@ def comparison_results_view(request: HttpRequest) -> HttpResponse:
                     except Exception as e:
                         print(f"Error running {algorithm_name}: {e}")
         
-        comparison_plots = generate_comparison_plots(all_aggregated_errors, algorithms, config_name, lline_config)
+        comparison_plots = generate_comparison_plots(all_aggregated_errors, algorithms, config_name, lline_config, request)
         
         all_config_results.append({
             'name': config_name,
@@ -456,8 +459,14 @@ def generate_plots(
     run_id: int,
     num_runs: int,
     lline_config: Dict[str, bool],
+    request: HttpRequest = None,
 ) -> Dict[str, str]:
     plots: Dict[str, str] = {}
+    
+    is_russian = False
+    if request:
+        language = request.LANGUAGE_CODE
+        is_russian = language == 'ru'
 
     plt.figure(figsize=(12, 8))
 
@@ -470,12 +479,17 @@ def generate_plots(
         ]
         x_vals: List[float] = [p[0] for p in positions]
         y_vals: List[float] = [p[1] for p in positions]
+        
+        label_true = f"Target {target.id} (True)"
+        if is_russian:
+            label_true = f"Цель {target.id} (Истинная)"
+        
         plt.plot(
             x_vals,
             y_vals,
             color=colors[i],
             linewidth=3,
-            label=f"Target {target.id} (True)",
+            label=label_true,
             alpha=0.7,
         )
 
@@ -526,13 +540,17 @@ def generate_plots(
             x_vals: List[float] = [est[0] for est in target_estimates]
             y_vals: List[float] = [est[1] for est in target_estimates]
 
+            label_est = f"Target {target_id} ({algorithm_name})"
+            if is_russian:
+                label_est = f"Цель {target_id} ({algorithm_name})"
+
             plt.plot(
                 x_vals,
                 y_vals,
                 line_styles.get(algorithm_name, "--"),
                 color=colors[target_id],
                 linewidth=2,
-                label=f"Target {target_id} ({algorithm_name})",
+                label=label_est,
                 alpha=0.8,
             )
 
@@ -559,13 +577,17 @@ def generate_plots(
             )
 
     for i, sensor in enumerate(sim.sensors):
+        label_sensor = f"Sensor {sensor.id}"
+        if is_russian:
+            label_sensor = f"Сенсор {sensor.id}"
+        
         plt.scatter(
             sensor.position[0],
             sensor.position[1],
             color="red",
             s=150,
             marker="^",
-            label=f"Sensor {sensor.id}",
+            label=label_sensor,
             edgecolors="black",
             zorder=5,
         )
@@ -577,6 +599,17 @@ def generate_plots(
             fontweight="bold",
         )
 
+    label_start_true = "Start (True)"
+    label_end_true = "End (True)"
+    label_start_est = "Start (Est.)"
+    label_end_est = "End (Est.)"
+    
+    if is_russian:
+        label_start_true = "Начало (Истинное)"
+        label_end_true = "Конец (Истинный)"
+        label_start_est = "Начало (Оценка)"
+        label_end_est = "Конец (Оценка)"
+
     plt.scatter(
         [],
         [],
@@ -585,7 +618,7 @@ def generate_plots(
         marker="D",
         edgecolors="black",
         linewidth=2,
-        label="Start (True)",
+        label=label_start_true,
     )
     plt.scatter(
         [],
@@ -595,7 +628,7 @@ def generate_plots(
         marker="X",
         edgecolors="black",
         linewidth=2,
-        label="End (True)",
+        label=label_end_true,
     )
     plt.scatter(
         [],
@@ -605,7 +638,7 @@ def generate_plots(
         marker="s",
         edgecolors="black",
         linewidth=2,
-        label="Start (Est.)",
+        label=label_start_est,
     )
     plt.scatter(
         [],
@@ -615,17 +648,31 @@ def generate_plots(
         marker="o",
         edgecolors="black",
         linewidth=2,
-        label="End (Est.)",
+        label=label_end_est,
     )
 
-    plt.xlabel("X coordinate")
-    plt.ylabel("Y coordinate")
-    if num_runs > 1:
-        plt.title(
-            f"True Trajectories and Algorithm Estimates (Run {run_id + 1}/{num_runs})"
-        )
+    xlabel = "X coordinate"
+    ylabel = "Y coordinate"
+    title_trajectories = "True Trajectories and Algorithm Estimates"
+    title_convergence = "Convergence Error for Each Target"
+    
+    if is_russian:
+        xlabel = "Координата X"
+        ylabel = "Координата Y"
+        if num_runs > 1:
+            title_trajectories = f"Истинные траектории и оценки алгоритмов (Запуск {run_id + 1}/{num_runs})"
+            title_convergence = f"Ошибка сходимости для каждой цели (Запуск {run_id + 1}/{num_runs})"
+        else:
+            title_trajectories = "Истинные траектории и оценки алгоритмов"
+            title_convergence = "Ошибка сходимости для каждой цели"
     else:
-        plt.title("True Trajectories and Algorithm Estimates")
+        if num_runs > 1:
+            title_trajectories = f"True Trajectories and Algorithm Estimates (Run {run_id + 1}/{num_runs})"
+            title_convergence = f"Convergence Error for Each Target (Run {run_id + 1}/{num_runs})"
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title_trajectories)
     plt.grid(True, alpha=0.3)
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
@@ -671,21 +718,29 @@ def generate_plots(
                 errors_over_time[target_id].append(avg_error)
 
         for target_id, errors in errors_over_time.items():
+            label = f"Target {target_id} ({algorithm_name})"
+            if is_russian:
+                label = f"Цель {target_id} ({algorithm_name})"
+            
             plt.plot(
                 range(len(errors)),
                 errors,
                 color=colors[target_id],
                 linestyle=line_styles.get(algorithm_name, "-"),
-                label=f"Target {target_id} ({algorithm_name})",
+                label=label,
                 linewidth=2,
             )
 
-    plt.xlabel("Iteration (including initial)")
-    plt.ylabel("Average Error (All Sensors)")
-    if num_runs > 1:
-        plt.title(f"Convergence Error for Each Target (Run {run_id + 1}/{num_runs})")
-    else:
-        plt.title("Convergence Error for Each Target")
+    xlabel_iter = "Iteration (including initial)"
+    ylabel_error = "Average Error (All Sensors)"
+    
+    if is_russian:
+        xlabel_iter = "Итерация (включая начальную)"
+        ylabel_error = "Средняя ошибка (все сенсоры)"
+
+    plt.xlabel(xlabel_iter)
+    plt.ylabel(ylabel_error)
+    plt.title(title_convergence)
     plt.grid(True, alpha=0.3)
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
@@ -705,11 +760,17 @@ def generate_aggregated_plots(
     all_initial_estimates: Dict[int, Dict[int, Dict[int, np.ndarray]]],
     num_runs: int,
     lline_config: Dict[str, bool],
+    request: HttpRequest = None,
 ) -> Dict[str, str]:
     plots: Dict[str, str] = {}
 
     if num_runs <= 1:
         return plots
+
+    is_russian = False
+    if request:
+        language = request.LANGUAGE_CODE
+        is_russian = language == 'ru'
 
     aggregated_errors: Dict[str, List[List[float]]] = {}
 
@@ -802,9 +863,18 @@ def generate_aggregated_plots(
                 fontweight="bold",
             )
 
-    plt.xlabel("Iteration (including initial)")
-    plt.ylabel("Aggregated Error (Mean ± Std)")
-    plt.title(f"Aggregated Error Convergence ({num_runs} Runs)")
+    xlabel_iter = "Iteration (including initial)"
+    ylabel_error = "Aggregated Error (Mean ± Std)"
+    title = f"Aggregated Error Convergence ({num_runs} Runs)"
+    
+    if is_russian:
+        xlabel_iter = "Итерация (включая начальную)"
+        ylabel_error = "Агрегированная ошибка (Среднее ± Ст. откл.)"
+        title = f"Агрегированная сходимость ошибки ({num_runs} запусков)"
+
+    plt.xlabel(xlabel_iter)
+    plt.ylabel(ylabel_error)
+    plt.title(title)
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -826,11 +896,17 @@ def generate_individual_plots(
     target_id: Optional[int] = None,
     run_id: int = 0,
     lline_config: Dict[str, bool] = None,
+    request: HttpRequest = None,
 ) -> Dict[str, str]:
     if lline_config is None:
         lline_config = {}
 
     plots: Dict[str, str] = {}
+    
+    is_russian = False
+    if request:
+        language = request.LANGUAGE_CODE
+        is_russian = language == 'ru'
 
     plt.figure(figsize=(12, 8))
 
@@ -845,12 +921,17 @@ def generate_individual_plots(
             ]
             x_vals: List[float] = [p[0] for p in positions]
             y_vals: List[float] = [p[1] for p in positions]
+            
+            label_true = f"Target {target_id} (True)"
+            if is_russian:
+                label_true = f"Цель {target_id} (Истинная)"
+            
             plt.plot(
                 x_vals,
                 y_vals,
                 color="black",
                 linewidth=4,
-                label=f"Target {target_id} (True)",
+                label=label_true,
                 alpha=0.7,
             )
 
@@ -900,13 +981,17 @@ def generate_individual_plots(
                     x_vals: List[float] = [est[0] for est in sensor_estimates]
                     y_vals: List[float] = [est[1] for est in sensor_estimates]
 
+                    label_sensor = f"Sensor {sensor_id} ({algorithm_name})"
+                    if is_russian:
+                        label_sensor = f"Сенсор {sensor_id} ({algorithm_name})"
+
                     plt.plot(
                         x_vals,
                         y_vals,
                         line_styles.get(algorithm_name, "--"),
                         color=colors[sensor_id % len(colors)],
                         linewidth=2,
-                        label=f"Sensor {sensor_id} ({algorithm_name})",
+                        label=label_sensor,
                         alpha=0.8,
                     )
 
@@ -949,13 +1034,17 @@ def generate_individual_plots(
                         x_vals: List[float] = [est[0] for est in sensor_estimates]
                         y_vals: List[float] = [est[1] for est in sensor_estimates]
 
+                        label_sensor = f"Sensor {sensor_idx} ({algorithm_name})"
+                        if is_russian:
+                            label_sensor = f"Сенсор {sensor_idx} ({algorithm_name})"
+
                         plt.plot(
                             x_vals,
                             y_vals,
                             line_styles.get(algorithm_name, "--"),
                             color=colors[sensor_idx],
                             linewidth=2,
-                            label=f"Sensor {sensor_idx} ({algorithm_name})",
+                            label=label_sensor,
                             alpha=0.8,
                         )
 
@@ -983,13 +1072,17 @@ def generate_individual_plots(
 
         for i, sensor in enumerate(sim.sensors):
             if sensor_id is None or sensor.id == sensor_id:
+                label_sensor_point = f"Sensor {sensor.id}"
+                if is_russian:
+                    label_sensor_point = f"Сенсор {sensor.id}"
+                
                 plt.scatter(
                     sensor.position[0],
                     sensor.position[1],
                     color=colors[i],
                     s=150,
                     marker="^",
-                    label=f"Sensor {sensor.id}",
+                    label=label_sensor_point,
                     edgecolors="black",
                     zorder=5,
                 )
@@ -1001,17 +1094,51 @@ def generate_individual_plots(
                     fontweight="bold",
                 )
 
+        label_start_true = "Start (True)"
+        label_end_true = "End (True)"
+        label_start_est = "Start (Est.)"
+        label_end_est = "End (Est.)"
+        
+        if is_russian:
+            label_start_true = "Начало (Истинное)"
+            label_end_true = "Конец (Истинный)"
+            label_start_est = "Начало (Оценка)"
+            label_end_est = "Конец (Оценка)"
+
+        plt.scatter([], [], c="white", s=180, marker="D", edgecolors="black", linewidth=2, label=label_start_true)
+        plt.scatter([], [], c="white", s=180, marker="X", edgecolors="black", linewidth=2, label=label_end_true)
+        plt.scatter([], [], c="white", s=120, marker="s", edgecolors="black", linewidth=2, label=label_start_est)
+        plt.scatter([], [], c="white", s=120, marker="o", edgecolors="black", linewidth=2, label=label_end_est)
+
         title_suffix = ""
         if sensor_id is not None and target_id is not None:
-            title_suffix = f" - Sensor {sensor_id} & Target {target_id}"
+            if is_russian:
+                title_suffix = f" - Сенсор {sensor_id} и Цель {target_id}"
+            else:
+                title_suffix = f" - Sensor {sensor_id} & Target {target_id}"
         elif target_id is not None:
-            title_suffix = f" - Target {target_id}"
+            if is_russian:
+                title_suffix = f" - Цель {target_id}"
+            else:
+                title_suffix = f" - Target {target_id}"
 
-        title_suffix += f" (Run {run_id + 1})"
+        if is_russian:
+            title_suffix += f" (Запуск {run_id + 1})"
+        else:
+            title_suffix += f" (Run {run_id + 1})"
 
-        plt.xlabel("X coordinate")
-        plt.ylabel("Y coordinate")
-        plt.title(f"Trajectories{title_suffix}")
+        xlabel = "X coordinate"
+        ylabel = "Y coordinate"
+        title = f"Trajectories{title_suffix}"
+        
+        if is_russian:
+            xlabel = "Координата X"
+            ylabel = "Координата Y"
+            title = f"Траектории{title_suffix}"
+
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
         plt.grid(True, alpha=0.3)
         plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
         plt.tight_layout()
@@ -1025,12 +1152,17 @@ def generate_individual_plots(
             ]
             x_vals: List[float] = [p[0] for p in positions]
             y_vals: List[float] = [p[1] for p in positions]
+            
+            label_true = f"Target {target.id} (True)"
+            if is_russian:
+                label_true = f"Цель {target.id} (Истинная)"
+            
             plt.plot(
                 x_vals,
                 y_vals,
                 color=colors[i],
                 linewidth=3,
-                label=f"Target {target.id} (True)",
+                label=label_true,
                 alpha=0.7,
             )
 
@@ -1083,13 +1215,17 @@ def generate_individual_plots(
                         x_vals: List[float] = [est[0] for est in sensor_estimates]
                         y_vals: List[float] = [est[1] for est in sensor_estimates]
 
+                        label_est = f"Target {target_idx} (Sensor {sensor_id} {algorithm_name})"
+                        if is_russian:
+                            label_est = f"Цель {target_idx} (Сенсор {sensor_id} {algorithm_name})"
+
                         plt.plot(
                             x_vals,
                             y_vals,
                             line_styles.get(algorithm_name, "--"),
                             color=colors[target_idx],
                             linewidth=2,
-                            label=f"Target {target_idx} (Sensor {sensor_id} {algorithm_name})",
+                            label=label_est,
                             alpha=0.8,
                         )
 
@@ -1117,13 +1253,17 @@ def generate_individual_plots(
 
         for i, sensor in enumerate(sim.sensors):
             if sensor_id is None or sensor.id == sensor_id:
+                label_sensor_point = f"Sensor {sensor.id}"
+                if is_russian:
+                    label_sensor_point = f"Сенсор {sensor.id}"
+                
                 plt.scatter(
                     sensor.position[0],
                     sensor.position[1],
                     color="red",
                     s=150,
                     marker="^",
-                    label=f"Sensor {sensor.id}",
+                    label=label_sensor_point,
                     edgecolors="black",
                     zorder=5,
                 )
@@ -1135,15 +1275,46 @@ def generate_individual_plots(
                     fontweight="bold",
                 )
 
+        label_start_true = "Start (True)"
+        label_end_true = "End (True)"
+        label_start_est = "Start (Est.)"
+        label_end_est = "End (Est.)"
+        
+        if is_russian:
+            label_start_true = "Начало (Истинное)"
+            label_end_true = "Конец (Истинный)"
+            label_start_est = "Начало (Оценка)"
+            label_end_est = "Конец (Оценка)"
+
+        plt.scatter([], [], c="white", s=180, marker="D", edgecolors="black", linewidth=2, label=label_start_true)
+        plt.scatter([], [], c="white", s=180, marker="X", edgecolors="black", linewidth=2, label=label_end_true)
+        plt.scatter([], [], c="white", s=120, marker="s", edgecolors="black", linewidth=2, label=label_start_est)
+        plt.scatter([], [], c="white", s=120, marker="o", edgecolors="black", linewidth=2, label=label_end_est)
+
         title_suffix = ""
         if sensor_id is not None:
-            title_suffix = f" - Sensor {sensor_id}"
+            if is_russian:
+                title_suffix = f" - Сенсор {sensor_id}"
+            else:
+                title_suffix = f" - Sensor {sensor_id}"
 
-        title_suffix += f" (Run {run_id + 1})"
+        if is_russian:
+            title_suffix += f" (Запуск {run_id + 1})"
+        else:
+            title_suffix += f" (Run {run_id + 1})"
 
-        plt.xlabel("X coordinate")
-        plt.ylabel("Y coordinate")
-        plt.title(f"Trajectories{title_suffix}")
+        xlabel = "X coordinate"
+        ylabel = "Y coordinate"
+        title = f"Trajectories{title_suffix}"
+        
+        if is_russian:
+            xlabel = "Координата X"
+            ylabel = "Координата Y"
+            title = f"Траектории{title_suffix}"
+
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.title(title)
         plt.grid(True, alpha=0.3)
         plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
         plt.tight_layout()
@@ -1161,6 +1332,7 @@ def generate_individual_plots(
         "accelerated_spsa": ":",
         "distributed_kalman_filter": "--",
     }
+    
     for algorithm_name, algorithm_results in results.items():
         if algorithm_name not in line_styles:
             line_styles[algorithm_name] = "--"
@@ -1186,11 +1358,15 @@ def generate_individual_plots(
                             errors.append(error)
 
                 if errors:
+                    label = f"Sensor {sensor_id} ({algorithm_name})"
+                    if is_russian:
+                        label = f"Сенсор {sensor_id} ({algorithm_name})"
+                    
                     plt.plot(
                         range(len(errors)),
                         errors,
                         linestyle=line_styles.get(algorithm_name, "-"),
-                        label=f"Sensor {sensor_id} ({algorithm_name})",
+                        label=label,
                         linewidth=2,
                     )
 
@@ -1238,12 +1414,16 @@ def generate_individual_plots(
                                 errors.append(error)
 
                     if errors:
+                        label = f"Sensor {sensor_idx} ({algorithm_name})"
+                        if is_russian:
+                            label = f"Сенсор {sensor_idx} ({algorithm_name})"
+                        
                         plt.plot(
                             range(len(errors)),
                             errors,
                             color=colors_sensor[sensor_idx],
                             linestyle=line_styles.get(algorithm_name, "-"),
-                            label=f"Sensor {sensor_idx} ({algorithm_name})",
+                            label=label,
                             linewidth=2,
                         )
 
@@ -1292,12 +1472,16 @@ def generate_individual_plots(
                                 errors.append(error)
 
                     if errors:
+                        label = f"Target {target_idx} ({algorithm_name})"
+                        if is_russian:
+                            label = f"Цель {target_idx} ({algorithm_name})"
+                        
                         plt.plot(
                             range(len(errors)),
                             errors,
                             color=colors_target[target_idx],
                             linestyle=line_styles.get(algorithm_name, "-"),
-                            label=f"Target {target_idx} ({algorithm_name})",
+                            label=label,
                             linewidth=2,
                         )
 
@@ -1322,17 +1506,38 @@ def generate_individual_plots(
 
     title_suffix = ""
     if sensor_id is not None and target_id is not None:
-        title_suffix = f" - Sensor {sensor_id} & Target {target_id}"
+        if is_russian:
+            title_suffix = f" - Сенсор {sensor_id} и Цель {target_id}"
+        else:
+            title_suffix = f" - Sensor {sensor_id} & Target {target_id}"
     elif sensor_id is not None:
-        title_suffix = f" - Sensor {sensor_id}"
+        if is_russian:
+            title_suffix = f" - Сенсор {sensor_id}"
+        else:
+            title_suffix = f" - Sensor {sensor_id}"
     elif target_id is not None:
-        title_suffix = f" - Target {target_id}"
+        if is_russian:
+            title_suffix = f" - Цель {target_id}"
+        else:
+            title_suffix = f" - Target {target_id}"
 
-    title_suffix += f" (Run {run_id + 1})"
+    if is_russian:
+        title_suffix += f" (Запуск {run_id + 1})"
+    else:
+        title_suffix += f" (Run {run_id + 1})"
 
-    plt.xlabel("Iteration (including initial)")
-    plt.ylabel("Error")
-    plt.title(f"Convergence Error{title_suffix}")
+    xlabel_iter = "Iteration (including initial)"
+    ylabel_error = "Error"
+    title = f"Convergence Error{title_suffix}"
+    
+    if is_russian:
+        xlabel_iter = "Итерация (включая начальную)"
+        ylabel_error = "Ошибка"
+        title = f"Ошибка сходимости{title_suffix}"
+
+    plt.xlabel(xlabel_iter)
+    plt.ylabel(ylabel_error)
+    plt.title(title)
     plt.grid(True, alpha=0.3)
     plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
@@ -1351,8 +1556,14 @@ def generate_comparison_plots(
     algorithms: List[str],
     config_name: str,
     lline_config: Dict[str, bool],
+    request: HttpRequest = None,
 ) -> Dict[str, str]:
     plots = {}
+    
+    is_russian = False
+    if request:
+        language = request.LANGUAGE_CODE
+        is_russian = language == 'ru'
     
     plt.figure(figsize=(12, 8))
     
@@ -1405,9 +1616,18 @@ def generate_comparison_plots(
                 fontweight="bold",
             )
     
-    plt.xlabel("Iteration (including initial)")
-    plt.ylabel("Average Error (Mean ± Std)")
-    plt.title(f"Convergence Comparison - {config_name}")
+    xlabel_iter = "Iteration (including initial)"
+    ylabel_error = "Average Error (Mean ± Std)"
+    title = f"Convergence Comparison - {config_name}"
+    
+    if is_russian:
+        xlabel_iter = "Итерация (включая начальную)"
+        ylabel_error = "Средняя ошибка (Среднее ± Ст. откл.)"
+        title = f"Сравнение сходимости - {config_name}"
+    
+    plt.xlabel(xlabel_iter)
+    plt.ylabel(ylabel_error)
+    plt.title(title)
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()

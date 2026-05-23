@@ -122,6 +122,8 @@ def rename_algorithm(request, algorithm_id):
 
 @login_required
 def save_config(request):
+    is_russian = request.LANGUAGE_CODE == 'ru'
+    
     if request.method == 'POST':
         form = SimulationConfigForm(request.POST, user=request.user)
         if form.is_valid():
@@ -159,7 +161,12 @@ def save_config(request):
                 config.adjacency_matrix = None
             
             config.save()
-            messages.success(request, f'Configuration "{config.name}" saved successfully!')
+            
+            if is_russian:
+                messages.success(request, f'Конфигурация "{config.name}" успешно сохранена!')
+            else:
+                messages.success(request, f'Configuration "{config.name}" saved successfully!')
+            
             return redirect('accounts:profile')
     else:
         initial_data = {}
@@ -200,7 +207,13 @@ def delete_config(request, config_id):
     config = get_object_or_404(SimulationConfig, id=config_id, user=request.user)
     config_name = config.name
     config.delete()
-    messages.success(request, f'Configuration "{config_name}" deleted successfully!')
+    
+    is_russian = request.LANGUAGE_CODE == 'ru'
+    if is_russian:
+        messages.success(request, f'Конфигурация "{config_name}" успешно удалена!')
+    else:
+        messages.success(request, f'Configuration "{config_name}" deleted successfully!')
+    
     return redirect('accounts:profile')
 
 
@@ -218,12 +231,20 @@ def run_multiple_configs(request):
     if request.method == 'POST':
         config_ids = request.POST.getlist('config_ids')
         if not config_ids:
-            messages.error(request, 'Please select at least one configuration to run.')
+            is_russian = request.LANGUAGE_CODE == 'ru'
+            if is_russian:
+                messages.error(request, 'Пожалуйста, выберите хотя бы одну конфигурацию для запуска.')
+            else:
+                messages.error(request, 'Please select at least one configuration to run.')
             return redirect('accounts:profile')
         
         configs = SimulationConfig.objects.filter(id__in=config_ids, user=request.user)
         if not configs:
-            messages.error(request, 'No valid configurations selected.')
+            is_russian = request.LANGUAGE_CODE == 'ru'
+            if is_russian:
+                messages.error(request, 'Не выбрано ни одной действительной конфигурации.')
+            else:
+                messages.error(request, 'No valid configurations selected.')
             return redirect('accounts:profile')
         
         all_params = []

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTAA - Results</title>
+    <title>Multi-Agent Tracking - Results</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -109,7 +109,7 @@
                             </div>
                             <div class="col-md-6">
                                 <p><strong>{% if LANGUAGE_CODE == 'ru' %}Линейные цели:{% else %}Linear Targets:{% endif %}</strong> {{ simulation_params.num_linear_targets }}</p>
-                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Случайные цели:{% else %}Random Targets:{% endif %}</strong> {{ simulation_params.num_random_targets }}</p>
+                                <p><strong>{% if LANGUAGE_CODE == 'ru' %}Цели со случайным блужданием:{% else %}Random Walk Targets:{% endif %}</strong> {{ simulation_params.num_random_targets }}</p>
                                 <p><strong>{% if LANGUAGE_CODE == 'ru' %}Текущий запуск:{% else %}Current Run:{% endif %}</strong> {{ selected_run|add:1 }} {% if LANGUAGE_CODE == 'ru' %}из{% else %}of{% endif %} {{ num_runs }}</p>
                             </div>
                         </div>
@@ -119,7 +119,7 @@
 
                 {% if config_name %}
                     <div class="alert alert-info mb-4">
-                        {% if LANGUAGE_CODE == 'ru' %}Запуск сохранённого сценария:{% else %}Running saved scenario:{% endif %} <strong>{{ config_name }}</strong>
+                        {% if LANGUAGE_CODE == 'ru' %}Запуск сохранённой конфигурации:{% else %}Running saved configuration:{% endif %} <strong>{{ config_name }}</strong>
                     </div>
                 {% endif %}
 
@@ -187,6 +187,7 @@
 
                     <div class="tab-pane fade" id="individual" role="tabpanel">
                         <h2 class="mb-4">{% if LANGUAGE_CODE == 'ru' %}Индивидуальный вид{% else %}Individual View{% endif %} {% if num_runs > 1 %}({% if LANGUAGE_CODE == 'ru' %}Запуск{% else %}Run{% endif %} {{ selected_run|add:1 }}){% endif %}</h2>
+                        
                         <div class="card mb-4">
                             <div class="card-body">
                                 <form method="get" class="row g-3 align-items-end">
