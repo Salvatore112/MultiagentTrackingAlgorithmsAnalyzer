@@ -19,7 +19,9 @@ class Distributed_Kalman_Filter(TrackingAlgorithm):
         self.sensors_positions: Optional[Dict[int, np.ndarray]] = sensors_positions
         self.number_of_targets: int = len(true_targets_position.keys())
         self.target_ids: Set[int] = {i for i in range(self.number_of_targets)}
-        self.true_targets_position: Optional[Dict[int, np.ndarray]] = true_targets_position
+        self.true_targets_position: Optional[Dict[int, np.ndarray]] = (
+            true_targets_position
+        )
         self.distances: Optional[Dict[int, Dict[int, float]]] = distances
         self.init_coords: Optional[Dict[int, Dict[int, np.ndarray]]] = init_coords
 
@@ -30,9 +32,12 @@ class Distributed_Kalman_Filter(TrackingAlgorithm):
         self.R = np.eye(self.dimensions) * 0.1
 
         self.weight = None
-        
+
         if adjacency_matrix is None:
-            self.adjacency_matrix = [[1 if i != j else 0 for j in range(self.number_of_sensors)] for i in range(self.number_of_sensors)]
+            self.adjacency_matrix = [
+                [1 if i != j else 0 for j in range(self.number_of_sensors)]
+                for i in range(self.number_of_sensors)
+            ]
         else:
             self.adjacency_matrix = adjacency_matrix
 
@@ -48,7 +53,7 @@ class Distributed_Kalman_Filter(TrackingAlgorithm):
     ) -> Dict[int, List[int]]:
         neibors_mat: np.ndarray = (weight != 0).astype(int)
         np.fill_diagonal(neibors_mat, 0)
-        
+
         for i in range(self.number_of_sensors):
             for j in range(self.number_of_sensors):
                 if self.adjacency_matrix[i][j] == 0:
@@ -74,18 +79,12 @@ class Distributed_Kalman_Filter(TrackingAlgorithm):
         weight = self.weight
 
         theta_hat: Dict[int, Dict[int, np.ndarray]] = {
-            l: {
-                i: self.init_coords[l][i].copy()
-                for i in self.sensor_ids
-            }
+            l: {i: self.init_coords[l][i].copy() for i in self.sensor_ids}
             for l in self.target_ids
         }
 
         P: Dict[int, Dict[int, np.ndarray]] = {
-            l: {
-                i: np.eye(self.dimensions)
-                for i in self.sensor_ids
-            }
+            l: {i: np.eye(self.dimensions) for i in self.sensor_ids}
             for l in self.target_ids
         }
 
@@ -109,7 +108,9 @@ class Distributed_Kalman_Filter(TrackingAlgorithm):
 
                 neighbors_i = neighbors.get(i, [])
                 if len(neighbors_i) > 0:
-                    consensus = sum(theta_hat[l][j] for j in neighbors_i) / len(neighbors_i)
+                    consensus = sum(theta_hat[l][j] for j in neighbors_i) / len(
+                        neighbors_i
+                    )
                     x_upd = 0.5 * x_upd + 0.5 * consensus
 
                 theta_new[l][i] = x_upd

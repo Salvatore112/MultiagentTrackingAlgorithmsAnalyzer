@@ -17,13 +17,17 @@ from algorithms.distributed_kalman_filter import Distributed_Kalman_Filter
 matplotlib.use("Agg")
 
 
-def generate_adjacency_matrix(num_sensors: int, sparsity_percent: float = 100.0) -> List[List[int]]:
+def generate_adjacency_matrix(
+    num_sensors: int, sparsity_percent: float = 100.0
+) -> List[List[int]]:
     if sparsity_percent >= 100.0:
-        return [[1 if i != j else 0 for j in range(num_sensors)] for i in range(num_sensors)]
-    
+        return [
+            [1 if i != j else 0 for j in range(num_sensors)] for i in range(num_sensors)
+        ]
+
     if sparsity_percent <= 0.0:
         return [[0 for j in range(num_sensors)] for i in range(num_sensors)]
-    
+
     probability = sparsity_percent / 100.0
     matrix = []
     for i in range(num_sensors):
@@ -37,12 +41,12 @@ def generate_adjacency_matrix(num_sensors: int, sparsity_percent: float = 100.0)
                 else:
                     row.append(0)
         matrix.append(row)
-    
+
     for i in range(num_sensors):
         for j in range(num_sensors):
             if matrix[i][j] == 1:
                 matrix[j][i] = 1
-    
+
     return matrix
 
 
@@ -52,20 +56,18 @@ def get_algorithm_instance(algorithm_name, algorithm_config, user=None):
         "accelerated_spsa": Accelerated_SPSA,
         "distributed_kalman_filter": Distributed_Kalman_Filter,
     }
-    
+
     if algorithm_name in base_algorithms:
         return base_algorithms[algorithm_name](**algorithm_config)
-    
+
     if user and user.is_authenticated:
         try:
             from accounts.models import CustomAlgorithm
-            
+
             custom_algo = CustomAlgorithm.objects.filter(
-                user=user, 
-                name=algorithm_name, 
-                is_active=True
+                user=user, name=algorithm_name, is_active=True
             ).first()
-            
+
             if custom_algo:
                 algorithm_class = custom_algo.get_algorithm_class()
                 if algorithm_class:
@@ -76,7 +78,7 @@ def get_algorithm_instance(algorithm_name, algorithm_config, user=None):
         except Exception as e:
             print(f"Error loading custom algorithm {algorithm_name}: {e}")
             return None
-    
+
     return None
 
 
@@ -98,21 +100,25 @@ def setup_view(request: HttpRequest) -> HttpResponse:
 
         lline_config: Dict[str, bool] = {}
         for algo in algorithms:
-            if algo in ["original_spsa", "accelerated_spsa", "distributed_kalman_filter"]:
+            if algo in [
+                "original_spsa",
+                "accelerated_spsa",
+                "distributed_kalman_filter",
+            ]:
                 lline_config[algo] = request.POST.get(f"{algo}_lline") == "on"
             else:
                 lline_config[algo] = request.POST.get(f"{algo}_lline") == "on"
 
         adjacency_sparsity: float = float(request.POST.get("adjacency_sparsity", 100))
-        
+
         adjacency_matrix_str = request.POST.get("adjacency_matrix", "")
         adjacency_matrix = None
         if adjacency_matrix_str:
             try:
-                rows = adjacency_matrix_str.strip().split('\n')
+                rows = adjacency_matrix_str.strip().split("\n")
                 adjacency_matrix = []
                 for row in rows:
-                    adjacency_matrix.append([int(x.strip()) for x in row.split(',')])
+                    adjacency_matrix.append([int(x.strip()) for x in row.split(",")])
                 if len(adjacency_matrix) != num_sensors:
                     adjacency_matrix = None
                 else:
@@ -151,14 +157,23 @@ def setup_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         try:
             from accounts.models import CustomAlgorithm
-            custom_algorithms = list(request.user.algorithms.filter(is_active=True).values_list('name', flat=True))
+
+            custom_algorithms = list(
+                request.user.algorithms.filter(is_active=True).values_list(
+                    "name", flat=True
+                )
+            )
         except:
             pass
-    
-    return render(request, "simulations/setup.html", {
-        "custom_algorithms": custom_algorithms,
-        "user": request.user,
-    })
+
+    return render(
+        request,
+        "simulations/setup.html",
+        {
+            "custom_algorithms": custom_algorithms,
+            "user": request.user,
+        },
+    )
 
 
 def results_view(request: HttpRequest) -> HttpResponse:
@@ -213,16 +228,18 @@ def results_view(request: HttpRequest) -> HttpResponse:
 
         sim.run_simulation()
         spsa_input: Dict[str, Any] = sim.get_spsa_input_data()
-        
+
         if adjacency_matrix is not None:
             spsa_input["adjacency_matrix"] = adjacency_matrix
         else:
-            spsa_input["adjacency_matrix"] = generate_adjacency_matrix(num_sensors, adjacency_sparsity)
+            spsa_input["adjacency_matrix"] = generate_adjacency_matrix(
+                num_sensors, adjacency_sparsity
+            )
 
         all_initial_estimates[run_id] = spsa_input["init_coords"]
 
         results: Dict[str, Any] = {}
-        
+
         for algorithm_name in algorithms:
             algorithm_config = {
                 "sensors_positions": spsa_input["sensors_positions"],
@@ -231,20 +248,22 @@ def results_view(request: HttpRequest) -> HttpResponse:
                 "init_coords": spsa_input["init_coords"],
                 "adjacency_matrix": spsa_input["adjacency_matrix"],
             }
-            
+
             algorithm_instance = get_algorithm_instance(
-                algorithm_name, 
-                algorithm_config, 
-                request.user if request.user.is_authenticated else None
+                algorithm_name,
+                algorithm_config,
+                request.user if request.user.is_authenticated else None,
             )
-            
+
             if algorithm_instance:
                 try:
                     results[algorithm_name] = algorithm_instance.run_n_iterations(
                         data=spsa_input["data"]
                     )
                 except Exception as e:
-                    messages.error(request, f"Error running algorithm {algorithm_name}: {e}")
+                    messages.error(
+                        request, f"Error running algorithm {algorithm_name}: {e}"
+                    )
             else:
                 messages.warning(request, f"Could not load algorithm: {algorithm_name}")
 
@@ -277,7 +296,12 @@ def results_view(request: HttpRequest) -> HttpResponse:
         )
     else:
         aggregated_plots = generate_aggregated_plots(
-            all_simulations, all_results, all_initial_estimates, num_runs, lline_config, request
+            all_simulations,
+            all_results,
+            all_initial_estimates,
+            num_runs,
+            lline_config,
+            request,
         )
         if selected_run < num_runs:
             plots_data = generate_plots(
@@ -291,7 +315,7 @@ def results_view(request: HttpRequest) -> HttpResponse:
             )
 
     config_name = request.session.get("single_config_name", None)
-    
+
     context: Dict[str, Any] = {
         "plots": plots_data,
         "aggregated_plots": aggregated_plots,
@@ -337,16 +361,16 @@ def results_view(request: HttpRequest) -> HttpResponse:
 
 def comparison_results_view(request: HttpRequest) -> HttpResponse:
     multiple_configs = request.session.get("multiple_configs", [])
-    
+
     if not multiple_configs:
         return HttpResponseRedirect(reverse("simulations:setup"))
-    
+
     all_config_results = []
-    
+
     for config_data in multiple_configs:
-        config_name = config_data['name']
-        params = config_data['params']
-        
+        config_name = config_data["name"]
+        params = config_data["params"]
+
         duration = params.get("duration", 50)
         num_sensors = params.get("num_sensors", 3)
         num_linear_targets = params.get("num_linear_targets", 2)
@@ -362,39 +386,47 @@ def comparison_results_view(request: HttpRequest) -> HttpResponse:
         lline_config = params.get("lline_config", {})
         adjacency_matrix = params.get("adjacency_matrix", None)
         adjacency_sparsity = params.get("adjacency_sparsity", 100.0)
-        
+
         noise_config = None
         if noise_enabled:
             if noise_type == "uniform":
                 noise_config = {"type": "uniform", "low": noise_low, "high": noise_high}
             elif noise_type == "gaussian":
-                noise_config = {"type": "gaussian", "mean": noise_mean, "std": noise_std}
-        
+                noise_config = {
+                    "type": "gaussian",
+                    "mean": noise_mean,
+                    "std": noise_std,
+                }
+
         all_aggregated_errors = {algo: [] for algo in algorithms}
-        
+
         for run_id in range(num_runs):
-            sim = Simulation(duration=duration, time_step=1.0, noise_config=noise_config)
-            
+            sim = Simulation(
+                duration=duration, time_step=1.0, noise_config=noise_config
+            )
+
             for i in range(num_sensors):
                 sim.add_uniform_sensor(i, area_size=50)
-            
+
             target_id = 0
             for i in range(num_linear_targets):
                 sim.add_linear_target(target_id, area_size=50)
                 target_id += 1
-            
+
             for i in range(num_random_targets):
                 sim.add_random_walk_target(target_id, area_size=50)
                 target_id += 1
-            
+
             sim.run_simulation()
             spsa_input = sim.get_spsa_input_data()
-            
+
             if adjacency_matrix is not None:
                 spsa_input["adjacency_matrix"] = adjacency_matrix
             else:
-                spsa_input["adjacency_matrix"] = generate_adjacency_matrix(num_sensors, adjacency_sparsity)
-            
+                spsa_input["adjacency_matrix"] = generate_adjacency_matrix(
+                    num_sensors, adjacency_sparsity
+                )
+
             for algorithm_name in algorithms:
                 algorithm_config = {
                     "sensors_positions": spsa_input["sensors_positions"],
@@ -403,17 +435,19 @@ def comparison_results_view(request: HttpRequest) -> HttpResponse:
                     "init_coords": spsa_input["init_coords"],
                     "adjacency_matrix": spsa_input["adjacency_matrix"],
                 }
-                
+
                 algorithm_instance = get_algorithm_instance(
-                    algorithm_name, 
-                    algorithm_config, 
-                    request.user if request.user.is_authenticated else None
+                    algorithm_name,
+                    algorithm_config,
+                    request.user if request.user.is_authenticated else None,
                 )
-                
+
                 if algorithm_instance:
                     try:
-                        results = algorithm_instance.run_n_iterations(spsa_input["data"])
-                        
+                        results = algorithm_instance.run_n_iterations(
+                            spsa_input["data"]
+                        )
+
                         errors_over_time = []
                         for time_iter in results.values():
                             true_positions = time_iter[0]
@@ -426,30 +460,40 @@ def comparison_results_view(request: HttpRequest) -> HttpResponse:
                                     iteration_errors.append(error)
                             if iteration_errors:
                                 errors_over_time.append(np.mean(iteration_errors))
-                        
+
                         if errors_over_time:
-                            all_aggregated_errors[algorithm_name].append(errors_over_time)
+                            all_aggregated_errors[algorithm_name].append(
+                                errors_over_time
+                            )
                     except Exception as e:
                         print(f"Error running {algorithm_name}: {e}")
-        
-        comparison_plots = generate_comparison_plots(all_aggregated_errors, algorithms, config_name, lline_config, request)
-        
-        all_config_results.append({
-            'name': config_name,
-            'params': params,
-            'plots': comparison_plots,
-            'algorithms': algorithms,
-        })
-    
+
+        comparison_plots = generate_comparison_plots(
+            all_aggregated_errors, algorithms, config_name, lline_config, request
+        )
+
+        all_config_results.append(
+            {
+                "name": config_name,
+                "params": params,
+                "plots": comparison_plots,
+                "algorithms": algorithms,
+            }
+        )
+
     if "multiple_configs" in request.session:
         del request.session["multiple_configs"]
     if "single_config_name" in request.session:
         del request.session["single_config_name"]
-    
-    return render(request, "simulations/comparison_results.html", {
-        'config_results': all_config_results,
-        'user': request.user,
-    })
+
+    return render(
+        request,
+        "simulations/comparison_results.html",
+        {
+            "config_results": all_config_results,
+            "user": request.user,
+        },
+    )
 
 
 def generate_plots(
@@ -462,11 +506,11 @@ def generate_plots(
     request: HttpRequest = None,
 ) -> Dict[str, str]:
     plots: Dict[str, str] = {}
-    
+
     is_russian = False
     if request:
         language = request.LANGUAGE_CODE
-        is_russian = language == 'ru'
+        is_russian = language == "ru"
 
     plt.figure(figsize=(12, 8))
 
@@ -479,11 +523,11 @@ def generate_plots(
         ]
         x_vals: List[float] = [p[0] for p in positions]
         y_vals: List[float] = [p[1] for p in positions]
-        
+
         label_true = f"Target {target.id} (True)"
         if is_russian:
             label_true = f"Цель {target.id} (Истинная)"
-        
+
         plt.plot(
             x_vals,
             y_vals,
@@ -523,7 +567,7 @@ def generate_plots(
     for algorithm_name, algorithm_results in results.items():
         if algorithm_name not in line_styles:
             line_styles[algorithm_name] = "--"
-        
+
         for target_id in algorithm_results[0][0].keys():
             target_estimates: List[np.ndarray] = []
 
@@ -580,7 +624,7 @@ def generate_plots(
         label_sensor = f"Sensor {sensor.id}"
         if is_russian:
             label_sensor = f"Сенсор {sensor.id}"
-        
+
         plt.scatter(
             sensor.position[0],
             sensor.position[1],
@@ -603,7 +647,7 @@ def generate_plots(
     label_end_true = "End (True)"
     label_start_est = "Start (Est.)"
     label_end_est = "End (Est.)"
-    
+
     if is_russian:
         label_start_true = "Начало (Истинное)"
         label_end_true = "Конец (Истинный)"
@@ -655,20 +699,24 @@ def generate_plots(
     ylabel = "Y coordinate"
     title_trajectories = "True Trajectories and Algorithm Estimates"
     title_convergence = "Convergence Error for Each Target"
-    
+
     if is_russian:
         xlabel = "Координата X"
         ylabel = "Координата Y"
         if num_runs > 1:
             title_trajectories = f"Истинные траектории и оценки алгоритмов (Запуск {run_id + 1}/{num_runs})"
-            title_convergence = f"Ошибка сходимости для каждой цели (Запуск {run_id + 1}/{num_runs})"
+            title_convergence = (
+                f"Ошибка сходимости для каждой цели (Запуск {run_id + 1}/{num_runs})"
+            )
         else:
             title_trajectories = "Истинные траектории и оценки алгоритмов"
             title_convergence = "Ошибка сходимости для каждой цели"
     else:
         if num_runs > 1:
             title_trajectories = f"True Trajectories and Algorithm Estimates (Run {run_id + 1}/{num_runs})"
-            title_convergence = f"Convergence Error for Each Target (Run {run_id + 1}/{num_runs})"
+            title_convergence = (
+                f"Convergence Error for Each Target (Run {run_id + 1}/{num_runs})"
+            )
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -693,7 +741,7 @@ def generate_plots(
     for algorithm_name, algorithm_results in results.items():
         if algorithm_name not in line_styles:
             line_styles[algorithm_name] = "--"
-            
+
         errors_over_time: Dict[int, List[float]] = {
             target_id: [] for target_id in algorithm_results[0][0].keys()
         }
@@ -721,7 +769,7 @@ def generate_plots(
             label = f"Target {target_id} ({algorithm_name})"
             if is_russian:
                 label = f"Цель {target_id} ({algorithm_name})"
-            
+
             plt.plot(
                 range(len(errors)),
                 errors,
@@ -733,7 +781,7 @@ def generate_plots(
 
     xlabel_iter = "Iteration (including initial)"
     ylabel_error = "Average Error (All Sensors)"
-    
+
     if is_russian:
         xlabel_iter = "Итерация (включая начальную)"
         ylabel_error = "Средняя ошибка (все сенсоры)"
@@ -770,7 +818,7 @@ def generate_aggregated_plots(
     is_russian = False
     if request:
         language = request.LANGUAGE_CODE
-        is_russian = language == 'ru'
+        is_russian = language == "ru"
 
     aggregated_errors: Dict[str, List[List[float]]] = {}
 
@@ -866,7 +914,7 @@ def generate_aggregated_plots(
     xlabel_iter = "Iteration (including initial)"
     ylabel_error = "Aggregated Error (Mean ± Std)"
     title = f"Aggregated Error Convergence ({num_runs} Runs)"
-    
+
     if is_russian:
         xlabel_iter = "Итерация (включая начальную)"
         ylabel_error = "Агрегированная ошибка (Среднее ± Ст. откл.)"
@@ -902,11 +950,11 @@ def generate_individual_plots(
         lline_config = {}
 
     plots: Dict[str, str] = {}
-    
+
     is_russian = False
     if request:
         language = request.LANGUAGE_CODE
-        is_russian = language == 'ru'
+        is_russian = language == "ru"
 
     plt.figure(figsize=(12, 8))
 
@@ -921,11 +969,11 @@ def generate_individual_plots(
             ]
             x_vals: List[float] = [p[0] for p in positions]
             y_vals: List[float] = [p[1] for p in positions]
-            
+
             label_true = f"Target {target_id} (True)"
             if is_russian:
                 label_true = f"Цель {target_id} (Истинная)"
-            
+
             plt.plot(
                 x_vals,
                 y_vals,
@@ -965,7 +1013,7 @@ def generate_individual_plots(
         for algorithm_name, algorithm_results in results.items():
             if algorithm_name not in line_styles:
                 line_styles[algorithm_name] = "--"
-                
+
             if sensor_id is not None:
                 sensor_estimates: List[np.ndarray] = []
 
@@ -1075,7 +1123,7 @@ def generate_individual_plots(
                 label_sensor_point = f"Sensor {sensor.id}"
                 if is_russian:
                     label_sensor_point = f"Сенсор {sensor.id}"
-                
+
                 plt.scatter(
                     sensor.position[0],
                     sensor.position[1],
@@ -1098,17 +1146,53 @@ def generate_individual_plots(
         label_end_true = "End (True)"
         label_start_est = "Start (Est.)"
         label_end_est = "End (Est.)"
-        
+
         if is_russian:
             label_start_true = "Начало (Истинное)"
             label_end_true = "Конец (Истинный)"
             label_start_est = "Начало (Оценка)"
             label_end_est = "Конец (Оценка)"
 
-        plt.scatter([], [], c="white", s=180, marker="D", edgecolors="black", linewidth=2, label=label_start_true)
-        plt.scatter([], [], c="white", s=180, marker="X", edgecolors="black", linewidth=2, label=label_end_true)
-        plt.scatter([], [], c="white", s=120, marker="s", edgecolors="black", linewidth=2, label=label_start_est)
-        plt.scatter([], [], c="white", s=120, marker="o", edgecolors="black", linewidth=2, label=label_end_est)
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=180,
+            marker="D",
+            edgecolors="black",
+            linewidth=2,
+            label=label_start_true,
+        )
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=180,
+            marker="X",
+            edgecolors="black",
+            linewidth=2,
+            label=label_end_true,
+        )
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=120,
+            marker="s",
+            edgecolors="black",
+            linewidth=2,
+            label=label_start_est,
+        )
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=120,
+            marker="o",
+            edgecolors="black",
+            linewidth=2,
+            label=label_end_est,
+        )
 
         title_suffix = ""
         if sensor_id is not None and target_id is not None:
@@ -1130,7 +1214,7 @@ def generate_individual_plots(
         xlabel = "X coordinate"
         ylabel = "Y coordinate"
         title = f"Trajectories{title_suffix}"
-        
+
         if is_russian:
             xlabel = "Координата X"
             ylabel = "Координата Y"
@@ -1152,11 +1236,11 @@ def generate_individual_plots(
             ]
             x_vals: List[float] = [p[0] for p in positions]
             y_vals: List[float] = [p[1] for p in positions]
-            
+
             label_true = f"Target {target.id} (True)"
             if is_russian:
                 label_true = f"Цель {target.id} (Истинная)"
-            
+
             plt.plot(
                 x_vals,
                 y_vals,
@@ -1196,7 +1280,7 @@ def generate_individual_plots(
         for algorithm_name, algorithm_results in results.items():
             if algorithm_name not in line_styles:
                 line_styles[algorithm_name] = "--"
-                
+
             if sensor_id is not None:
                 for target_idx in algorithm_results[0][0].keys():
                     sensor_estimates: List[np.ndarray] = []
@@ -1215,7 +1299,9 @@ def generate_individual_plots(
                         x_vals: List[float] = [est[0] for est in sensor_estimates]
                         y_vals: List[float] = [est[1] for est in sensor_estimates]
 
-                        label_est = f"Target {target_idx} (Sensor {sensor_id} {algorithm_name})"
+                        label_est = (
+                            f"Target {target_idx} (Sensor {sensor_id} {algorithm_name})"
+                        )
                         if is_russian:
                             label_est = f"Цель {target_idx} (Сенсор {sensor_id} {algorithm_name})"
 
@@ -1256,7 +1342,7 @@ def generate_individual_plots(
                 label_sensor_point = f"Sensor {sensor.id}"
                 if is_russian:
                     label_sensor_point = f"Сенсор {sensor.id}"
-                
+
                 plt.scatter(
                     sensor.position[0],
                     sensor.position[1],
@@ -1279,17 +1365,53 @@ def generate_individual_plots(
         label_end_true = "End (True)"
         label_start_est = "Start (Est.)"
         label_end_est = "End (Est.)"
-        
+
         if is_russian:
             label_start_true = "Начало (Истинное)"
             label_end_true = "Конец (Истинный)"
             label_start_est = "Начало (Оценка)"
             label_end_est = "Конец (Оценка)"
 
-        plt.scatter([], [], c="white", s=180, marker="D", edgecolors="black", linewidth=2, label=label_start_true)
-        plt.scatter([], [], c="white", s=180, marker="X", edgecolors="black", linewidth=2, label=label_end_true)
-        plt.scatter([], [], c="white", s=120, marker="s", edgecolors="black", linewidth=2, label=label_start_est)
-        plt.scatter([], [], c="white", s=120, marker="o", edgecolors="black", linewidth=2, label=label_end_est)
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=180,
+            marker="D",
+            edgecolors="black",
+            linewidth=2,
+            label=label_start_true,
+        )
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=180,
+            marker="X",
+            edgecolors="black",
+            linewidth=2,
+            label=label_end_true,
+        )
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=120,
+            marker="s",
+            edgecolors="black",
+            linewidth=2,
+            label=label_start_est,
+        )
+        plt.scatter(
+            [],
+            [],
+            c="white",
+            s=120,
+            marker="o",
+            edgecolors="black",
+            linewidth=2,
+            label=label_end_est,
+        )
 
         title_suffix = ""
         if sensor_id is not None:
@@ -1306,7 +1428,7 @@ def generate_individual_plots(
         xlabel = "X coordinate"
         ylabel = "Y coordinate"
         title = f"Trajectories{title_suffix}"
-        
+
         if is_russian:
             xlabel = "Координата X"
             ylabel = "Координата Y"
@@ -1332,11 +1454,11 @@ def generate_individual_plots(
         "accelerated_spsa": ":",
         "distributed_kalman_filter": "--",
     }
-    
+
     for algorithm_name, algorithm_results in results.items():
         if algorithm_name not in line_styles:
             line_styles[algorithm_name] = "--"
-            
+
         if target_id is not None:
             if sensor_id is not None:
                 errors: List[float] = []
@@ -1361,7 +1483,7 @@ def generate_individual_plots(
                     label = f"Sensor {sensor_id} ({algorithm_name})"
                     if is_russian:
                         label = f"Сенсор {sensor_id} ({algorithm_name})"
-                    
+
                     plt.plot(
                         range(len(errors)),
                         errors,
@@ -1417,7 +1539,7 @@ def generate_individual_plots(
                         label = f"Sensor {sensor_idx} ({algorithm_name})"
                         if is_russian:
                             label = f"Сенсор {sensor_idx} ({algorithm_name})"
-                        
+
                         plt.plot(
                             range(len(errors)),
                             errors,
@@ -1475,7 +1597,7 @@ def generate_individual_plots(
                         label = f"Target {target_idx} ({algorithm_name})"
                         if is_russian:
                             label = f"Цель {target_idx} ({algorithm_name})"
-                        
+
                         plt.plot(
                             range(len(errors)),
                             errors,
@@ -1529,7 +1651,7 @@ def generate_individual_plots(
     xlabel_iter = "Iteration (including initial)"
     ylabel_error = "Error"
     title = f"Convergence Error{title_suffix}"
-    
+
     if is_russian:
         xlabel_iter = "Итерация (включая начальную)"
         ylabel_error = "Ошибка"
@@ -1559,29 +1681,32 @@ def generate_comparison_plots(
     request: HttpRequest = None,
 ) -> Dict[str, str]:
     plots = {}
-    
+
     is_russian = False
     if request:
         language = request.LANGUAGE_CODE
-        is_russian = language == 'ru'
-    
+        is_russian = language == "ru"
+
     plt.figure(figsize=(12, 8))
-    
+
     colors = plt.cm.tab10(np.linspace(0, 1, len(algorithms)))
-    
+
     for idx, algorithm_name in enumerate(algorithms):
-        if algorithm_name not in aggregated_errors or not aggregated_errors[algorithm_name]:
+        if (
+            algorithm_name not in aggregated_errors
+            or not aggregated_errors[algorithm_name]
+        ):
             continue
-        
+
         all_run_errors = aggregated_errors[algorithm_name]
         min_length = min(len(errors) for errors in all_run_errors)
         all_run_errors = [errors[:min_length] for errors in all_run_errors]
-        
+
         mean_errors = np.mean(all_run_errors, axis=0)
         std_errors = np.std(all_run_errors, axis=0)
-        
+
         iterations = range(len(mean_errors))
-        
+
         plt.plot(
             iterations,
             mean_errors,
@@ -1596,7 +1721,7 @@ def generate_comparison_plots(
             color=colors[idx],
             alpha=0.2,
         )
-        
+
         if lline_config.get(algorithm_name, False):
             final_mean_error = mean_errors[-1]
             plt.axhline(
@@ -1615,27 +1740,27 @@ def generate_comparison_plots(
                 ha="right",
                 fontweight="bold",
             )
-    
+
     xlabel_iter = "Iteration (including initial)"
     ylabel_error = "Average Error (Mean ± Std)"
     title = f"Convergence Comparison - {config_name}"
-    
+
     if is_russian:
         xlabel_iter = "Итерация (включая начальную)"
         ylabel_error = "Средняя ошибка (Среднее ± Ст. откл.)"
         title = f"Сравнение сходимости - {config_name}"
-    
+
     plt.xlabel(xlabel_iter)
     plt.ylabel(ylabel_error)
     plt.title(title)
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    
+
     buffer = io.BytesIO()
     plt.savefig(buffer, format="png", dpi=150, bbox_inches="tight")
     buffer.seek(0)
     plots["comparison"] = base64.b64encode(buffer.getvalue()).decode()
     plt.close()
-    
+
     return plots

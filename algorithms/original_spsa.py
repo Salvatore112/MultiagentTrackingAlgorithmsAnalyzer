@@ -41,9 +41,12 @@ class Original_SPSA(TrackingAlgorithm):
         self.Delta_abs_value: float = 1 / np.sqrt(self.dimensions)
 
         self.weight = None
-        
+
         if adjacency_matrix is None:
-            self.adjacency_matrix = [[1 if i != j else 0 for j in range(self.number_of_sensors)] for i in range(self.number_of_sensors)]
+            self.adjacency_matrix = [
+                [1 if i != j else 0 for j in range(self.number_of_sensors)]
+                for i in range(self.number_of_sensors)
+            ]
         else:
             self.adjacency_matrix = adjacency_matrix
 
@@ -112,10 +115,11 @@ class Original_SPSA(TrackingAlgorithm):
 
                 neighbors_i: List[int] = neighbors.get(i, [])
                 b: np.ndarray = weight[i]
-                
+
                 if len(neighbors_i) > 0:
                     theta_diff: List[np.ndarray] = [
-                        abs(b[j]) * (theta_hat[l][i] - theta_hat[l][j]) for j in neighbors_i
+                        abs(b[j]) * (theta_hat[l][i] - theta_hat[l][j])
+                        for j in neighbors_i
                     ]
                     theta_new[l][i] = theta_hat[l][i] - (
                         self.alpha * spsa + self.gamma * sum(theta_diff)
@@ -148,10 +152,10 @@ class Original_SPSA(TrackingAlgorithm):
     ) -> float:
         C: np.ndarray = self._C_i(i, neibors)
         D: List[float] = self._D_l_i(l, i, neibors)
-        
+
         if C.shape[0] == 0:
             return float(np.linalg.norm(r_hat_l - self.sensors_positions[i]) ** 2)
-        
+
         if C.shape[0] == 1:
             C_i_inv = 1.0 / C[0, 0] if C[0, 0] != 0 else 1.0
             diff = r_hat_l - (C_i_inv * D[0])
@@ -204,7 +208,7 @@ class Original_SPSA(TrackingAlgorithm):
     ) -> Dict[int, List[int]]:
         neibors_mat: np.ndarray = (weight != 0).astype(int)
         np.fill_diagonal(neibors_mat, 0)
-        
+
         for i in range(self.number_of_sensors):
             for j in range(self.number_of_sensors):
                 if self.adjacency_matrix[i][j] == 0:

@@ -42,9 +42,12 @@ class Accelerated_SPSA(TrackingAlgorithm):
         self.Delta_abs_value: float = 1 / np.sqrt(self.dimensions)
 
         self.weight = None
-        
+
         if adjacency_matrix is None:
-            self.adjacency_matrix = [[1 if i != j else 0 for j in range(self.number_of_sensors)] for i in range(self.number_of_sensors)]
+            self.adjacency_matrix = [
+                [1 if i != j else 0 for j in range(self.number_of_sensors)]
+                for i in range(self.number_of_sensors)
+            ]
         else:
             self.adjacency_matrix = adjacency_matrix
 
@@ -205,7 +208,7 @@ class Accelerated_SPSA(TrackingAlgorithm):
     ) -> Dict[int, List[int]]:
         neibors_mat: np.ndarray = (weight != 0).astype(int)
         np.fill_diagonal(neibors_mat, 0)
-        
+
         for i in range(self.number_of_sensors):
             for j in range(self.number_of_sensors):
                 if self.adjacency_matrix[i][j] == 0:

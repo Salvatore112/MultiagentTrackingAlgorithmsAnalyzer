@@ -9,36 +9,51 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SimulationConfig',
+            name="SimulationConfig",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=100)),
-                ('description', models.TextField(blank=True)),
-                ('duration', models.FloatField(default=50)),
-                ('num_sensors', models.IntegerField(default=3)),
-                ('num_linear_targets', models.IntegerField(default=2)),
-                ('num_random_targets', models.IntegerField(default=2)),
-                ('num_runs', models.IntegerField(default=1)),
-                ('algorithms', models.JSONField(default=list)),
-                ('noise_enabled', models.BooleanField(default=False)),
-                ('noise_type', models.CharField(default='uniform', max_length=20)),
-                ('noise_low', models.FloatField(default=-0.1)),
-                ('noise_high', models.FloatField(default=0.1)),
-                ('noise_mean', models.FloatField(default=0.0)),
-                ('noise_std', models.FloatField(default=0.1)),
-                ('lline_config', models.JSONField(default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='configs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("description", models.TextField(blank=True)),
+                ("duration", models.FloatField(default=50)),
+                ("num_sensors", models.IntegerField(default=3)),
+                ("num_linear_targets", models.IntegerField(default=2)),
+                ("num_random_targets", models.IntegerField(default=2)),
+                ("num_runs", models.IntegerField(default=1)),
+                ("algorithms", models.JSONField(default=list)),
+                ("noise_enabled", models.BooleanField(default=False)),
+                ("noise_type", models.CharField(default="uniform", max_length=20)),
+                ("noise_low", models.FloatField(default=-0.1)),
+                ("noise_high", models.FloatField(default=0.1)),
+                ("noise_mean", models.FloatField(default=0.0)),
+                ("noise_std", models.FloatField(default=0.1)),
+                ("lline_config", models.JSONField(default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="configs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
-                'unique_together': {('user', 'name')},
+                "ordering": ["-created_at"],
+                "unique_together": {("user", "name")},
             },
         ),
     ]

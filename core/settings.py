@@ -131,12 +131,12 @@ AUTH_PASSWORD_VALIDATORS: List[Dict[str, str]] = [
 LANGUAGE_CODE: str = "en"
 
 LANGUAGES = [
-    ('en', 'English'),
-    ('ru', 'Русский'),
+    ("en", "English"),
+    ("ru", "Русский"),
 ]
 
 LOCALE_PATHS = [
-    BASE_DIR / 'locale',
+    BASE_DIR / "locale",
 ]
 
 TIME_ZONE: str = "UTC"
