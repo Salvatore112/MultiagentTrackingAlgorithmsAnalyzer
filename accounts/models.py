@@ -83,6 +83,12 @@ class CustomAlgorithm(models.Model):
                     return obj
         return None
 
+    def get_algorithm_class_name(self):
+        algorithm_class = self.get_algorithm_class()
+        if algorithm_class:
+            return algorithm_class.__name__
+        return None
+
     def delete(self, *args, **kwargs):
         if self.module_name in sys.modules:
             del sys.modules[self.module_name]

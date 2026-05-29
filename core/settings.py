@@ -16,17 +16,10 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# Temporary key for development only
 SECRET_KEY = "django-insecure-temporary-key-for-dev-only-12345"
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG: bool = True
 
 if DEBUG:
@@ -50,8 +43,6 @@ else:
         "http://127.0.0.1:8000",
     ]
 
-# Application definition
-
 INSTALLED_APPS: List[str] = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -61,6 +52,7 @@ INSTALLED_APPS: List[str] = [
     "django.contrib.staticfiles",
     "simulations",
     "accounts",
+    "container_executor",
 ]
 
 MIDDLEWARE: List[str] = [
@@ -94,20 +86,12 @@ TEMPLATES: List[Dict[str, Any]] = [
 
 WSGI_APPLICATION: str = "core.wsgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES: Dict[str, Dict[str, Any]] = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": "db.sqlite3",
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS: List[Dict[str, str]] = [
     {
@@ -123,10 +107,6 @@ AUTH_PASSWORD_VALIDATORS: List[Dict[str, str]] = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE: str = "en"
 
@@ -145,26 +125,21 @@ USE_I18N: bool = True
 
 USE_TZ: bool = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL: str = "static/"
 STATICFILES_DIRS: List[Path] = [BASE_DIR / "static"]
 
-# Media files (User uploads)
 MEDIA_URL: str = "/media/"
 MEDIA_ROOT: Path = BASE_DIR / "media"
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 
-# Custom user model
 AUTH_USER_MODEL: str = "accounts.User"
 
-# Login URL
 LOGIN_URL: str = "accounts:login"
 LOGIN_REDIRECT_URL: str = "simulations:setup"
 LOGOUT_REDIRECT_URL: str = "simulations:setup"
+
+CONTAINER_EXECUTION_ENABLED: bool = True
+CONTAINER_TIMEOUT_SECONDS: int = 300
+CONTAINER_MEMORY_LIMIT: str = "512m"
+CONTAINER_CPU_LIMIT: float = 1.0

@@ -13,6 +13,7 @@ from .simulation import Simulation
 from algorithms.original_spsa import Original_SPSA
 from algorithms.accelerated_spsa import Accelerated_SPSA
 from algorithms.distributed_kalman_filter import Distributed_Kalman_Filter
+from container_executor import algorithm_executor
 
 matplotlib.use("Agg")
 
@@ -80,6 +81,72 @@ def get_algorithm_instance(algorithm_name, algorithm_config, user=None):
             return None
 
     return None
+
+
+def run_custom_algorithm_in_container(
+    algorithm_name, algorithm_config, simulation_data, user
+):
+    if not user or not user.is_authenticated:
+        return None
+
+    try:
+        from accounts.models import CustomAlgorithm
+
+        custom_algo = CustomAlgorithm.objects.filter(
+            user=user, name=algorithm_name, is_active=True
+        ).first()
+
+        if not custom_algo:
+            return None
+
+        algorithm_class_name = custom_algo.get_algorithm_class_name()
+        if not algorithm_class_name:
+            return None
+
+        result = algorithm_executor.execute_algorithm(
+            custom_algo.file.path,
+            algorithm_class_name,
+            algorithm_config,
+            simulation_data,
+        )
+
+        if result is None:
+            return None
+
+        reconstructed_result = {}
+        for iteration, value in result.items():
+            if isinstance(value, list) and len(value) == 2:
+                true_positions = value[0]
+                estimates = value[1]
+
+                reconstructed_true = {}
+                for target_id, pos in true_positions.items():
+                    if isinstance(pos, list):
+                        reconstructed_true[target_id] = np.array(pos)
+                    else:
+                        reconstructed_true[target_id] = pos
+
+                reconstructed_estimates = {}
+                for target_id, sensor_dict in estimates.items():
+                    reconstructed_estimates[target_id] = {}
+                    for sensor_id, pos in sensor_dict.items():
+                        if isinstance(pos, list):
+                            reconstructed_estimates[target_id][sensor_id] = np.array(
+                                pos
+                            )
+                        else:
+                            reconstructed_estimates[target_id][sensor_id] = pos
+
+                reconstructed_result[iteration] = [
+                    reconstructed_true,
+                    reconstructed_estimates,
+                ]
+
+        return reconstructed_result
+
+    except Exception as e:
+        print(f"Error running custom algorithm {algorithm_name} in container: {e}")
+        return None
 
 
 def setup_view(request: HttpRequest) -> HttpResponse:
@@ -249,23 +316,63 @@ def results_view(request: HttpRequest) -> HttpResponse:
                 "adjacency_matrix": spsa_input["adjacency_matrix"],
             }
 
-            algorithm_instance = get_algorithm_instance(
-                algorithm_name,
-                algorithm_config,
-                request.user if request.user.is_authenticated else None,
-            )
+            if algorithm_name in [
+                "original_spsa",
+                "accelerated_spsa",
+                "distributed_kalman_filter",
+            ]:
+                algorithm_instance = get_algorithm_instance(
+                    algorithm_name,
+                    algorithm_config,
+                    request.user if request.user.is_authenticated else None,
+                )
 
-            if algorithm_instance:
-                try:
-                    results[algorithm_name] = algorithm_instance.run_n_iterations(
-                        data=spsa_input["data"]
-                    )
-                except Exception as e:
-                    messages.error(
-                        request, f"Error running algorithm {algorithm_name}: {e}"
+                if algorithm_instance:
+                    try:
+                        results[algorithm_name] = algorithm_instance.run_n_iterations(
+                            data=spsa_input["data"]
+                        )
+                    except Exception as e:
+                        messages.error(
+                            request, f"Error running algorithm {algorithm_name}: {e}"
+                        )
+                else:
+                    messages.warning(
+                        request, f"Could not load algorithm: {algorithm_name}"
                     )
             else:
-                messages.warning(request, f"Could not load algorithm: {algorithm_name}")
+                container_result = run_custom_algorithm_in_container(
+                    algorithm_name,
+                    algorithm_config,
+                    spsa_input["data"],
+                    request.user if request.user.is_authenticated else None,
+                )
+
+                if container_result is not None:
+                    results[algorithm_name] = container_result
+                else:
+                    algorithm_instance = get_algorithm_instance(
+                        algorithm_name,
+                        algorithm_config,
+                        request.user if request.user.is_authenticated else None,
+                    )
+
+                    if algorithm_instance:
+                        try:
+                            results[algorithm_name] = (
+                                algorithm_instance.run_n_iterations(
+                                    data=spsa_input["data"]
+                                )
+                            )
+                        except Exception as e:
+                            messages.error(
+                                request,
+                                f"Error running algorithm {algorithm_name}: {e}",
+                            )
+                    else:
+                        messages.warning(
+                            request, f"Could not load algorithm: {algorithm_name}"
+                        )
 
         all_results[run_id] = results
         all_simulations[run_id] = sim
@@ -436,20 +543,53 @@ def comparison_results_view(request: HttpRequest) -> HttpResponse:
                     "adjacency_matrix": spsa_input["adjacency_matrix"],
                 }
 
-                algorithm_instance = get_algorithm_instance(
-                    algorithm_name,
-                    algorithm_config,
-                    request.user if request.user.is_authenticated else None,
-                )
+                if algorithm_name in [
+                    "original_spsa",
+                    "accelerated_spsa",
+                    "distributed_kalman_filter",
+                ]:
+                    algorithm_instance = get_algorithm_instance(
+                        algorithm_name,
+                        algorithm_config,
+                        request.user if request.user.is_authenticated else None,
+                    )
 
-                if algorithm_instance:
-                    try:
-                        results = algorithm_instance.run_n_iterations(
-                            spsa_input["data"]
-                        )
+                    if algorithm_instance:
+                        try:
+                            results = algorithm_instance.run_n_iterations(
+                                spsa_input["data"]
+                            )
 
+                            errors_over_time = []
+                            for time_iter in results.values():
+                                true_positions = time_iter[0]
+                                estimates = time_iter[1]
+                                iteration_errors = []
+                                for target_id, true_pos in true_positions.items():
+                                    sensor_estimates = estimates[target_id]
+                                    for sensor_est in sensor_estimates.values():
+                                        error = np.linalg.norm(sensor_est - true_pos)
+                                        iteration_errors.append(error)
+                                if iteration_errors:
+                                    errors_over_time.append(np.mean(iteration_errors))
+
+                            if errors_over_time:
+                                all_aggregated_errors[algorithm_name].append(
+                                    errors_over_time
+                                )
+                        except Exception as e:
+                            print(f"Error running {algorithm_name}: {e}")
+                else:
+                    container_result = run_custom_algorithm_in_container(
+                        algorithm_name,
+                        algorithm_config,
+                        spsa_input["data"],
+                        request.user if request.user.is_authenticated else None,
+                    )
+
+                    if container_result is not None:
                         errors_over_time = []
-                        for time_iter in results.values():
+                        for time_iter in container_result.values():
                             true_positions = time_iter[0]
                             estimates = time_iter[1]
                             iteration_errors = []
@@ -465,8 +605,42 @@ def comparison_results_view(request: HttpRequest) -> HttpResponse:
                             all_aggregated_errors[algorithm_name].append(
                                 errors_over_time
                             )
-                    except Exception as e:
-                        print(f"Error running {algorithm_name}: {e}")
+                    else:
+                        algorithm_instance = get_algorithm_instance(
+                            algorithm_name,
+                            algorithm_config,
+                            request.user if request.user.is_authenticated else None,
+                        )
+
+                        if algorithm_instance:
+                            try:
+                                results = algorithm_instance.run_n_iterations(
+                                    spsa_input["data"]
+                                )
+
+                                errors_over_time = []
+                                for time_iter in results.values():
+                                    true_positions = time_iter[0]
+                                    estimates = time_iter[1]
+                                    iteration_errors = []
+                                    for target_id, true_pos in true_positions.items():
+                                        sensor_estimates = estimates[target_id]
+                                        for sensor_est in sensor_estimates.values():
+                                            error = np.linalg.norm(
+                                                sensor_est - true_pos
+                                            )
+                                            iteration_errors.append(error)
+                                    if iteration_errors:
+                                        errors_over_time.append(
+                                            np.mean(iteration_errors)
+                                        )
+
+                                if errors_over_time:
+                                    all_aggregated_errors[algorithm_name].append(
+                                        errors_over_time
+                                    )
+                            except Exception as e:
+                                print(f"Error running {algorithm_name}: {e}")
 
         comparison_plots = generate_comparison_plots(
             all_aggregated_errors, algorithms, config_name, lline_config, request
